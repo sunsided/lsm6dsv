@@ -13,3 +13,16 @@ updates:
       interval: "weekly"
     cooldown:
       default-days: 7
+  # The firmware and the Wokwi chip are outside the workspace, with their own dependencies.
+  - package-ecosystem: "cargo"
+    directory: "/examples/esp32c3"
+    schedule:
+      interval: "weekly"
+    cooldown:
+      default-days: 7
+  - package-ecosystem: "cargo"
+    directory: "/sim/wokwi-chip"
+    schedule:
+      interval: "weekly"
+    cooldown:
+      default-days: 7

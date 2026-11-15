@@ -305,10 +305,7 @@ fn self_test_times_out_without_samples() {
         fn delay_ns(&mut self, _: u32) {}
     }
 
-    assert_eq!(
-        imu.self_test_accel(&mut NoDelay),
-        Err(SelfTestError::Timeout)
-    );
+    assert_eq!(imu.self_test_accel(&mut NoDelay), Err(Error::Timeout));
 }
 
 #[test]
@@ -328,4 +325,22 @@ fn filters() {
     imu.set_accel_filter(AccelFilter::LowPass(AccelBandwidth::Div10))
         .unwrap();
     assert_eq!(m.borrow().main_register(0x18) & 0b11000, 0b01000);
+}
+
+#[test]
+fn configuration_sequence_invalidates_tracked_full_scales() {
+    let m = model();
+    let mut imu = Lsm6dsv::new(FakeI2c::new(&m));
+    imu.set_accel_full_scale(AccelFullScale::G2).unwrap();
+
+    // A .ucf sequence that selects ±8 g in CTRL8 (17h).
+    imu.write_configuration(&[(0x17, 0x02)]).unwrap();
+    assert_eq!(imu.accel_full_scale().unwrap(), AccelFullScale::G8);
+}
+
+#[test]
+#[should_panic(expected = "one to four slaves")]
+fn sensor_hub_rejects_zero_slaves() {
+    let m = model();
+    let _ = Lsm6dsv::new(FakeI2c::new(&m)).set_sensor_hub(true, 0);
 }

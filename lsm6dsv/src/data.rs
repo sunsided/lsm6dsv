@@ -196,35 +196,6 @@ pub fn f16_to_f32(half: u16) -> f32 {
     f32::from_bits(bits)
 }
 
-/// Converts an `f32` to IEEE 754 half precision, rounding to nearest.
-pub fn f32_to_f16(value: f32) -> u16 {
-    let bits = value.to_bits();
-    let sign = ((bits >> 16) & 0x8000) as u16;
-    let exponent = ((bits >> 23) & 0xFF) as i32;
-    let mantissa = bits & 0x7F_FFFF;
-    if exponent == 0xFF {
-        return sign | 0x7C00 | if mantissa != 0 { 0x200 } else { 0 };
-    }
-
-    let half_exponent = exponent - 127 + 15;
-    if half_exponent >= 0x1F {
-        return sign | 0x7C00;
-    }
-
-    if half_exponent <= 0 {
-        if half_exponent < -10 {
-            return sign;
-        }
-
-        let m = (mantissa | 0x80_0000) >> (1 - half_exponent);
-        return sign | ((m + 0x1000) >> 13) as u16;
-    }
-
-    let half = sign as u32 | ((half_exponent as u32) << 10) | (mantissa >> 13);
-    // Round to nearest; a carry into the exponent is correct.
-    (half + ((mantissa >> 12) & 1)) as u16
-}
-
 /// Newton's method square root, since `no_std` has no `f32::sqrt`.
 fn sqrt(value: f32) -> f32 {
     if value <= 0.0 {
@@ -263,11 +234,7 @@ mod tests {
         assert_eq!(f16_to_f32(0x0001), 5.960_464_5e-8);
         assert_eq!(f16_to_f32(0x8001), -5.960_464_5e-8);
         assert!(f16_to_f32(0x7C00).is_infinite());
-        for half in [0x3C00_u16, 0xB800, 0x3555, 0x0400, 0x7BFF, 0x8000, 0x0001] {
-            assert_eq!(f32_to_f16(f16_to_f32(half)), half, "{half:#06x}");
-        }
-
-        assert_eq!(f32_to_f16(1.0e9), 0x7C00);
+        assert_eq!(f16_to_f32(0x7BFF), 65504.0);
     }
 
     #[test]

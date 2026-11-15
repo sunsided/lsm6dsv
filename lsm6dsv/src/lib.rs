@@ -76,7 +76,7 @@ mod self_test;
 
 pub use data::{
     Acceleration, AngularRate, QVAR_LSB_PER_MILLIVOLT, Quaternion, Qvar, SFLP_GRAVITY_MG_PER_LSB,
-    STANDARD_GRAVITY, Temperature, Timestamp, f16_to_f32, f32_to_f16,
+    STANDARD_GRAVITY, Temperature, Timestamp, f16_to_f32,
 };
 pub use driver::{Error, RESET_POLLS};
 pub use fifo::{DecodedSamples, FifoDecoder, FifoSample, FifoStatus, FifoWord};
@@ -93,7 +93,7 @@ pub use lsm6dsv_registers::{
 pub use lsm6dsv_registers::{AccelBandwidth, SelfTestMode};
 pub use self_test::{
     ACCEL_SELF_TEST_MAX_MG, ACCEL_SELF_TEST_MIN_MG, GYRO_SELF_TEST_MAX_DPS, GYRO_SELF_TEST_MIN_DPS,
-    SELF_TEST_SAMPLES, SelfTest, SelfTestError,
+    SELF_TEST_SAMPLES, SelfTest,
 };
 
 pub use blocking::Lsm6dsv;

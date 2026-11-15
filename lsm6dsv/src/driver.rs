@@ -4,7 +4,7 @@
 //! and once with `async` functions on [`AsyncInterface`](crate::AsyncInterface), inserting
 //! `.await` after every bus access. All decoding lives in plain functions outside the macro.
 
-use crate::{FifoStatus, FifoWord};
+use crate::FifoStatus;
 use lsm6dsv_registers::{
     AccelFullScale, Bank, Ctrl6, Ctrl8, FuncCfgAccess, GyroFullScale, PageSel, RegisterAddress,
 };
@@ -82,10 +82,6 @@ pub(crate) fn page_select(page: u8) -> u8 {
 /// The number of whole FIFO words to read, given the level and the buffer length.
 pub(crate) fn fifo_words_to_read(status: FifoStatus, capacity: usize) -> usize {
     usize::from(status.level).min(capacity)
-}
-
-pub(crate) fn fifo_word(bytes: &[u8; 7]) -> FifoWord {
-    FifoWord::from_bytes(bytes)
 }
 
 /// Defines the driver struct and its methods.
@@ -305,7 +301,7 @@ macro_rules! define_driver {
             ///
             /// Averages [`SELF_TEST_SAMPLES`](crate::SELF_TEST_SAMPLES) samples at 60 Hz and ±4 g
             /// without and with positive self-test. Takes about 0.4 s. The device must not move.
-            pub $($async)? fn self_test_accel<D: $delay>(&mut self, delay: &mut D) -> Result<$crate::SelfTest, $crate::SelfTestError<IFACE::Error>> {
+            pub $($async)? fn self_test_accel<D: $delay>(&mut self, delay: &mut D) -> Result<$crate::SelfTest, Error<IFACE::Error>> {
                 let ctrl1 = self.read_register::<Ctrl1>() $($await)* ?;
                 let ctrl8 = self.read_register::<Ctrl8>() $($await)* ?;
                 let ctrl10 = self.read_register::<Ctrl10>() $($await)* ?;
@@ -323,7 +319,7 @@ macro_rules! define_driver {
             /// Averages [`SELF_TEST_SAMPLES`](crate::SELF_TEST_SAMPLES) samples at 240 Hz and
             /// ±2000 dps without and with positive self-test. Takes about 0.3 s. The device must
             /// not move.
-            pub $($async)? fn self_test_gyro<D: $delay>(&mut self, delay: &mut D) -> Result<$crate::SelfTest, $crate::SelfTestError<IFACE::Error>> {
+            pub $($async)? fn self_test_gyro<D: $delay>(&mut self, delay: &mut D) -> Result<$crate::SelfTest, Error<IFACE::Error>> {
                 let ctrl2 = self.read_register::<Ctrl2>() $($await)* ?;
                 let ctrl6 = self.read_register::<Ctrl6>() $($await)* ?;
                 let ctrl10 = self.read_register::<Ctrl10>() $($await)* ?;
@@ -336,7 +332,7 @@ macro_rules! define_driver {
                 result
             }
 
-            $($async)? fn run_self_test<D: $delay>(&mut self, accel: bool, delay: &mut D) -> Result<$crate::SelfTest, $crate::SelfTestError<IFACE::Error>> {
+            $($async)? fn run_self_test<D: $delay>(&mut self, accel: bool, delay: &mut D) -> Result<$crate::SelfTest, Error<IFACE::Error>> {
                 use $crate::self_test::{ACCEL_SCALE, GYRO_SCALE, SETTLE_MS};
 
                 if accel {
@@ -371,7 +367,7 @@ macro_rules! define_driver {
             }
 
             /// Discards one sample, then sums up [`SELF_TEST_SAMPLES`](crate::SELF_TEST_SAMPLES) raw samples.
-            $($async)? fn self_test_sum<D: $delay>(&mut self, accel: bool, delay: &mut D) -> Result<[i32; 3], $crate::SelfTestError<IFACE::Error>> {
+            $($async)? fn self_test_sum<D: $delay>(&mut self, accel: bool, delay: &mut D) -> Result<[i32; 3], Error<IFACE::Error>> {
                 let mut sum = [0; 3];
 
                 for i in 0..=$crate::SELF_TEST_SAMPLES {
@@ -390,7 +386,7 @@ macro_rules! define_driver {
                 Ok(sum)
             }
 
-            $($async)? fn wait_for_sample<D: $delay>(&mut self, accel: bool, delay: &mut D) -> Result<(), $crate::SelfTestError<IFACE::Error>> {
+            $($async)? fn wait_for_sample<D: $delay>(&mut self, accel: bool, delay: &mut D) -> Result<(), Error<IFACE::Error>> {
                 for _ in 0..$crate::self_test::MAX_POLLS {
                     let status = self.status() $($await)* ?;
                     if (accel && status.xlda()) || (!accel && status.gda()) {
@@ -400,7 +396,7 @@ macro_rules! define_driver {
                     delay.delay_ms($crate::self_test::POLL_MS) $($await)*;
                 }
 
-                Err($crate::SelfTestError::Timeout)
+                Err(Error::Timeout)
             }
 
             // --- output data -----------------------------------------------------------------
@@ -507,7 +503,7 @@ macro_rules! define_driver {
             pub $($async)? fn read_fifo_word(&mut self) -> Result<FifoWord, IFACE::Error> {
                 let mut bytes = [0; 7];
                 self.read_bank(Bank::Main, RegisterAddress::FIFO_DATA_OUT_TAG.addr(), &mut bytes) $($await)* ?;
-                Ok($crate::driver::fifo_word(&bytes))
+                Ok(FifoWord::from_bytes(&bytes))
             }
 
             /// Reads as many FIFO words as are stored, up to the buffer length.
@@ -724,6 +720,9 @@ macro_rules! define_driver {
             /// banks through `FUNC_CFG_ACCESS` (address `0x01`) itself. The driver selects the
             /// main bank afterwards, so a sequence that ends in another bank is safe.
             pub $($async)? fn write_configuration(&mut self, sequence: &[(u8, u8)]) -> Result<(), IFACE::Error> {
+                // The sequence can change the full scales without the driver seeing it.
+                self.scales = Scales::default();
+
                 let result = self.write_sequence(sequence) $($await)*;
                 let restore = self.select_main_bank() $($await)*;
                 result.and(restore)
@@ -765,8 +764,13 @@ macro_rules! define_driver {
             }
 
             /// Enables the sensor hub master with `slaves` slaves (1 to 4).
+            ///
+            /// # Panics
+            ///
+            /// If `slaves` is not between 1 and 4.
             pub $($async)? fn set_sensor_hub(&mut self, enabled: bool, slaves: u8) -> Result<(), IFACE::Error> {
-                let count = slaves.clamp(1, 4) - 1;
+                assert!((1..=4).contains(&slaves), "the sensor hub has one to four slaves");
+                let count = slaves - 1;
                 self.modify_register(|r: MasterConfig| r.with_aux_sens_on(count).with_master_on(enabled)) $($await)*
             }
 
