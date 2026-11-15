@@ -1,0 +1,131 @@
+version: '3'
+
+# Mirrors .github/workflows/rust.yml. Pass extra arguments after `--`, e.g. `task test -- fifo`.
+
+tasks:
+  default:
+    cmds:
+      - task --list --sort=none
+    silent: true
+
+  build:
+    desc: Build the workspace with default, all and no default features
+    cmds:
+      - cargo build --workspace
+      - cargo build --workspace --all-features
+      - cargo build --workspace --no-default-features
+
+  test:
+    desc: Run unit, integration and doc tests with default, all and no default features
+    cmds:
+      - cargo test --workspace {{.CLI_ARGS}}
+      - cargo test --workspace --all-features {{.CLI_ARGS}}
+      - cargo test --workspace --no-default-features {{.CLI_ARGS}}
+
+  fmt:
+    desc: Format the workspace, the Wokwi chip and the ESP32-C3 example
+    aliases: [format]
+    cmds:
+      - cargo fmt --all
+      - cd sim/wokwi-chip && cargo fmt
+      - cd examples/esp32c3 && cargo fmt
+
+  fmt:check:
+    desc: Check formatting of the workspace
+    cmds:
+      - cargo fmt --all --check
+
+  lint:
+    desc: Run clippy on the workspace with all features, denying warnings
+    cmds:
+      - cargo clippy --workspace --all-features --all-targets -- -D warnings
+
+  lint:fix:
+    desc: Apply clippy fixes to the workspace
+    aliases: [fix]
+    cmds:
+      - cargo clippy --workspace --all-features --all-targets --fix --allow-dirty --allow-staged
+
+  spell:
+    desc: Check for spelling mistakes
+    preconditions:
+      - sh: command -v codespell
+        msg: "codespell not found — pipx install codespell"
+    cmds:
+      - codespell
+
+  docs:
+    desc: Build the documentation
+    cmds:
+      - cargo doc --workspace --all-features --no-deps
+
+  docs:open:
+    desc: Build the documentation and open it in a browser
+    cmds:
+      - cargo doc --workspace --all-features --no-deps --open
+
+  coverage:
+    desc: Generate an HTML coverage report (the sim model is excluded)
+    preconditions:
+      - sh: command -v cargo-llvm-cov
+        msg: "cargo-llvm-cov not found — cargo install cargo-llvm-cov && rustup component add llvm-tools"
+    cmds:
+      - cargo llvm-cov --workspace --all-features --ignore-filename-regex 'lsm6dsv-sim/' --html
+
+  chip:
+    desc: Build the Wokwi custom chip (wasm)
+    preconditions:
+      - sh: rustup target list --installed | grep -q wasm32-unknown-unknown
+        msg: "wasm32 target missing — rustup target add wasm32-unknown-unknown"
+    cmds:
+      - sim/wokwi-chip/build.sh
+
+  firmware:
+    desc: Build the ESP32-C3 example firmware
+    dir: examples/esp32c3
+    preconditions:
+      - sh: rustup target list --installed | grep -q riscv32imc-unknown-none-elf
+        msg: "riscv32 target missing — rustup target add riscv32imc-unknown-none-elf"
+    cmds:
+      - cargo build --release
+
+  lint:sim:
+    desc: Check formatting and run clippy on the Wokwi chip and the ESP32-C3 example
+    cmds:
+      - cd sim/wokwi-chip && cargo fmt --check && cargo clippy --release -- -D warnings
+      - cd examples/esp32c3 && cargo fmt --check && cargo clippy --release -- -D warnings
+
+  sim:
+    desc: Run the ESP32-C3 motion scenario in Wokwi
+    dir: examples/esp32c3
+    deps: [chip, firmware]
+    preconditions:
+      - sh: command -v wokwi-cli
+        msg: "wokwi-cli not found — curl -L https://wokwi.com/ci/install.sh | sh"
+      - sh: test -n "$WOKWI_CLI_TOKEN"
+        msg: "WOKWI_CLI_TOKEN not set — create one at https://wokwi.com/dashboard/ci"
+    cmds:
+      - wokwi-cli --timeout 30000 --scenario scenarios/motion.yaml
+
+  check:
+    desc: Run all static checks (spelling, format, clippy, docs)
+    cmds:
+      - task: spell
+      - task: fmt:check
+      - task: lint
+      - task: docs
+
+  ci:
+    desc: Run the CI sequence locally (checks, build, tests, simulator lint)
+    cmds:
+      - task: check
+      - task: build
+      - task: test
+      - task: lint:sim
+
+  clean:
+    desc: Remove build output of the workspace, the chip and the example
+    cmds:
+      - cargo clean
+      - cd sim/wokwi-chip && cargo clean
+      - cd examples/esp32c3 && cargo clean
