@@ -24,6 +24,7 @@ impl<'a> FakeI2c<'a> {
         if address != model.address() {
             return Err(ErrorKind::NoAcknowledge(NoAcknowledgeSource::Address));
         }
+
         // Adjacent operations of the same type form one transfer, without a repeated start.
         let mut previous_is_read = None;
         for operation in operations {
@@ -35,18 +36,22 @@ impl<'a> FakeI2c<'a> {
                     if restart && !model.i2c_start(false) {
                         return Err(ErrorKind::NoAcknowledge(NoAcknowledgeSource::Address));
                     }
+
                     if !bytes.iter().all(|&b| model.i2c_write(b)) {
                         return Err(ErrorKind::NoAcknowledge(NoAcknowledgeSource::Data));
                     }
                 }
+
                 Operation::Read(buffer) => {
                     if restart && !model.i2c_start(true) {
                         return Err(ErrorKind::NoAcknowledge(NoAcknowledgeSource::Address));
                     }
+
                     buffer.iter_mut().for_each(|b| *b = model.i2c_read());
                 }
             }
         }
+
         Ok(())
     }
 }

@@ -18,6 +18,9 @@ defmt = ["dep:defmt", "lsm6dsv-registers/defmt"]
 ## Qvar and machine learning core support (LSM6DSV16X only).
 lsm6dsv16x = ["lsm6dsv-registers/lsm6dsv16x"]
 
+[lints]
+workspace = true
+
 [dependencies]
 lsm6dsv-registers.workspace = true
 defmt = { workspace = true, optional = true }

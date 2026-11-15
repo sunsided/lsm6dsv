@@ -58,6 +58,7 @@ macro_rules! readable_register {
             const BANK: $crate::Bank = $bank;
             const ADDRESS: u8 = ($addr).addr();
         }
+
         impl $crate::prelude::HardwareRegister<$crate::prelude::R1> for $type {}
 
         impl
@@ -101,6 +102,7 @@ macro_rules! readable_spi2_register {
         impl $crate::Spi2Register for $type {
             const ADDRESS: u8 = ($addr).addr();
         }
+
         impl $crate::prelude::HardwareRegister<$crate::prelude::R1> for $type {}
 
         impl $crate::prelude::SPIRegister<$crate::prelude::RegisterAddress8, $crate::prelude::R1>

@@ -189,6 +189,7 @@ pub fn f16_to_f32(half: u16) -> f32 {
             let magnitude = m as f32 * f32::from_bits(0x3380_0000);
             return if sign != 0 { -magnitude } else { magnitude };
         }
+
         (0x1F, m) => sign | 0x7F80_0000 | (m << 13),
         (e, m) => sign | ((e + 127 - 15) << 23) | (m << 13),
     };
@@ -204,17 +205,21 @@ pub fn f32_to_f16(value: f32) -> u16 {
     if exponent == 0xFF {
         return sign | 0x7C00 | if mantissa != 0 { 0x200 } else { 0 };
     }
+
     let half_exponent = exponent - 127 + 15;
     if half_exponent >= 0x1F {
         return sign | 0x7C00;
     }
+
     if half_exponent <= 0 {
         if half_exponent < -10 {
             return sign;
         }
+
         let m = (mantissa | 0x80_0000) >> (1 - half_exponent);
         return sign | ((m + 0x1000) >> 13) as u16;
     }
+
     let half = sign as u32 | ((half_exponent as u32) << 10) | (mantissa >> 13);
     // Round to nearest; a carry into the exponent is correct.
     (half + ((mantissa >> 12) & 1)) as u16
@@ -225,10 +230,12 @@ fn sqrt(value: f32) -> f32 {
     if value <= 0.0 {
         return 0.0;
     }
+
     let mut x = if value > 1.0 { value } else { 1.0 };
     for _ in 0..20 {
         x = 0.5 * (x + value / x);
     }
+
     x
 }
 
@@ -259,6 +266,7 @@ mod tests {
         for half in [0x3C00_u16, 0xB800, 0x3555, 0x0400, 0x7BFF, 0x8000, 0x0001] {
             assert_eq!(f32_to_f16(f16_to_f32(half)), half, "{half:#06x}");
         }
+
         assert_eq!(f32_to_f16(1.0e9), 0x7C00);
     }
 
