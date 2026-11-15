@@ -5,6 +5,11 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Changed
+
+- Dropped `#![deny(warnings)]`, so a warning added by a newer compiler can no longer
+  fail the docs.rs build.
+
 ## [0.3.1] - 2026-11-15
 
 [0.3.1]: https://github.com/sunsided/lsm6dsv/releases/tag/v0.3.1
