@@ -30,6 +30,20 @@ imu.set_accel_mode(DataRate::Hz120, AccelMode::HighPerformance)?;
 let [x, y, z] = imu.read_acceleration()?.g();
 ```
 
+## Coordinate frames
+
+With the `coordinate-frame` feature, `SensorFrame<T>` names the sensor's axes as a
+[`coordinate-frame`](https://crates.io/crates/coordinate-frame) type. The datasheets draw a right-handed
+X/Y/Z set with +Z out of the top face (DS13476 Rev 5, Figure 4; DS13510 Rev 4, Figure 5), so
+`SensorFrame` is `EastNorthUp`. Convert readings into your board frame with `.into()`:
+
+```rust,ignore
+use coordinate_frame::NorthEastDown;
+use lsm6dsv::SensorFrame;
+
+let board: NorthEastDown<f32> = SensorFrame::from(imu.read_acceleration()?.g()).into();
+```
+
 ## License
 
 Licensed under any of the [EUPL-1.2](../LICENSE-EUPL), [MIT](../LICENSE-MIT) or [Apache-2.0](../LICENSE-APACHE) licenses, at your option.
