@@ -17,6 +17,9 @@ defmt = ["dep:defmt"]
 ## Registers and fields that exist only on the LSM6DSV16X (Qvar, machine learning core).
 lsm6dsv16x = []
 
+[lints]
+workspace = true
+
 [dependencies]
 bitfield-struct.workspace = true
 defmt = { workspace = true, optional = true }

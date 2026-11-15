@@ -30,6 +30,7 @@ impl<'a> FakeSpi<'a> {
                 Operation::Read(buffer) => {
                     buffer.iter_mut().for_each(|b| *b = model.spi_transfer(0))
                 }
+
                 Operation::Transfer(read, write) => {
                     for i in 0..read.len().max(write.len()) {
                         let miso = model.spi_transfer(write.get(i).copied().unwrap_or(0));
@@ -38,12 +39,15 @@ impl<'a> FakeSpi<'a> {
                         }
                     }
                 }
+
                 Operation::TransferInPlace(buffer) => {
                     buffer.iter_mut().for_each(|b| *b = model.spi_transfer(*b))
                 }
+
                 Operation::DelayNs(_) => {}
             }
         }
+
         Ok(())
     }
 }

@@ -163,9 +163,11 @@ impl Lsm6dsvModel {
                 self.main[addr] = 0;
             }
         }
+
         for addr in 0x50..=0x75 {
             self.main[addr] = 0;
         }
+
         self.main[Reg::WHO_AM_I as usize] = LSM6DSV_WHO_AM_I;
         self.main[Reg::CTRL3 as usize] = 0x44;
         self.main[Reg::DEN as usize] = 0x0E;
@@ -238,6 +240,7 @@ impl Lsm6dsvModel {
         if self.fifo_len == FIFO_CAPACITY {
             return false;
         }
+
         let index = (self.fifo_head + self.fifo_len) % FIFO_CAPACITY;
         self.fifo[index][0] = (tag & 0x1F) << 3 | (count & 0b11) << 1;
         self.fifo[index][1..].copy_from_slice(&data);
@@ -286,6 +289,7 @@ impl Lsm6dsvModel {
         if self.main[Reg::FUNCTIONS_ENABLE as usize] & 0x40 == 0 {
             return;
         }
+
         // 1 LSB = 21.75 µs.
         let total = self.timestamp_remainder_ns + ns;
         let lsb = total / 21_750;
@@ -304,6 +308,7 @@ impl Lsm6dsvModel {
         if !read {
             self.expect_address = true;
         }
+
         true
     }
 
@@ -315,6 +320,7 @@ impl Lsm6dsvModel {
         } else {
             self.write(byte);
         }
+
         true
     }
 
@@ -340,6 +346,7 @@ impl Lsm6dsvModel {
                 };
                 0
             }
+
             SpiState::Read => self.read(),
             SpiState::Write => {
                 self.write(mosi);
@@ -392,6 +399,7 @@ impl Lsm6dsvModel {
         if addr == Reg::FIFO_DATA_OUT_TAG as u8 {
             self.pop_fifo();
         }
+
         let value = self.main[addr as usize];
         // Reading the high byte of an output clears its data-ready flag.
         let status = &mut self.main[Reg::STATUS_REG as usize];
@@ -402,6 +410,7 @@ impl Lsm6dsvModel {
             0x3B => *status &= !0b1000,
             _ => {}
         }
+
         value
     }
 
@@ -412,6 +421,7 @@ impl Lsm6dsvModel {
             self.advance_page_cursor();
             return value;
         }
+
         self.embedded[addr as usize]
     }
 
@@ -431,6 +441,7 @@ impl Lsm6dsvModel {
                 }
             }
         }
+
         self.advance();
     }
 
@@ -440,6 +451,7 @@ impl Lsm6dsvModel {
             self.power_on_reset();
             return;
         }
+
         self.main[Reg::FUNC_CFG_ACCESS as usize] = value;
     }
 
@@ -450,10 +462,12 @@ impl Lsm6dsvModel {
         if read_only {
             return;
         }
+
         if addr == Reg::CTRL3 as u8 && value & 0b1 != 0 {
             self.software_reset();
             return;
         }
+
         // BOOT (bit 7) completes instantly.
         let value = if addr == Reg::CTRL3 as u8 {
             value & 0x7F
@@ -477,12 +491,14 @@ impl Lsm6dsvModel {
             self.advance_page_cursor();
             return;
         }
+
         if addr == Emb::EMB_FUNC_SRC as u8 && value & 0x80 != 0 {
             // PEDO_RST_STEP (bit 7) resets the step counter.
             self.set_steps(0);
             self.embedded[addr as usize] = value & 0x7F;
             return;
         }
+
         let read_only = [
             Emb::EMB_FUNC_EXEC_STATUS as u8,
             Emb::EMB_FUNC_STATUS as u8,
@@ -512,6 +528,7 @@ impl Lsm6dsvModel {
             self.main[start..start + 7].fill(0);
             return;
         }
+
         let word = self.fifo[self.fifo_head];
         self.main[start..start + 7].copy_from_slice(&word);
         self.fifo_head = (self.fifo_head + 1) % FIFO_CAPACITY;
@@ -528,9 +545,11 @@ impl Lsm6dsvModel {
         if watermark != 0 && level >= watermark {
             status2 |= 0x80;
         }
+
         if self.fifo_len == FIFO_CAPACITY {
             status2 |= 0x40;
         }
+
         self.main[Reg::FIFO_STATUS2 as usize] = status2;
     }
 }

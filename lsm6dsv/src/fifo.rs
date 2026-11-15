@@ -74,13 +74,16 @@ impl FifoWord {
             FifoTag::AccelNc | FifoTag::AccelNcT1 | FifoTag::AccelNcT2 | FifoTag::AccelDualC => {
                 FifoSample::Acceleration(Acceleration::from_bytes(d, accel))
             }
+
             FifoTag::GyroNc | FifoTag::GyroNcT1 | FifoTag::GyroNcT2 | FifoTag::GyroEis => {
                 FifoSample::AngularRate(AngularRate::from_bytes(d, gyro))
             }
+
             FifoTag::Temperature => FifoSample::Temperature(Temperature::from_bytes([d[0], d[1]])),
             FifoTag::Timestamp => {
                 FifoSample::Timestamp(Timestamp::from_bytes([d[0], d[1], d[2], d[3]]))
             }
+
             FifoTag::StepCounter => FifoSample::StepCounter {
                 steps: u16::from_le_bytes([d[0], d[1]]),
                 timestamp: Timestamp::from_bytes([d[2], d[3], d[4], d[5]]),
@@ -88,9 +91,11 @@ impl FifoWord {
             FifoTag::SflpGameRotationVector => {
                 FifoSample::GameRotation(Quaternion::from_fifo_bytes(d))
             }
+
             FifoTag::SflpGravityVector => {
                 FifoSample::Gravity(i16x3(d).map(|v| f32::from(v) * SFLP_GRAVITY_MG_PER_LSB))
             }
+
             FifoTag::SflpGyroBias => FifoSample::GyroBias(i16x3(d)),
             FifoTag::SensorHubSlave0 => FifoSample::SensorHub { slave: 0, data: *d },
             FifoTag::SensorHubSlave1 => FifoSample::SensorHub { slave: 1, data: *d },

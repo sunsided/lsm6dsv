@@ -12,6 +12,10 @@ repository = "https://github.com/sunsided/lsm6dsv"
 edition = "2024"
 rust-version = "1.85"
 
+[workspace.lints.clippy]
+# Modules with submodules use `name.rs` plus `name/`, never `name/mod.rs`.
+mod_module_files = "deny"
+
 [workspace.dependencies]
 bitfield-struct = "0.13.0"
 defmt = "1.0.1"

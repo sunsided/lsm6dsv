@@ -304,6 +304,7 @@ fn self_test_times_out_without_samples() {
     impl embedded_hal::delay::DelayNs for NoDelay {
         fn delay_ns(&mut self, _: u32) {}
     }
+
     assert_eq!(
         imu.self_test_accel(&mut NoDelay),
         Err(SelfTestError::Timeout)

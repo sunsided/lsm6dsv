@@ -186,6 +186,7 @@ macro_rules! define_driver {
                         return Ok(());
                     }
                 }
+
                 Err(Error::Timeout)
             }
 
@@ -199,6 +200,7 @@ macro_rules! define_driver {
                         return Ok(());
                     }
                 }
+
                 Err(Error::Timeout)
             }
 
@@ -516,6 +518,7 @@ macro_rules! define_driver {
                 for word in &mut words[..count] {
                     *word = self.read_fifo_word() $($await)* ?;
                 }
+
                 Ok(count)
             }
 
@@ -730,6 +733,7 @@ macro_rules! define_driver {
                 for &(address, value) in sequence {
                     self.iface.write(address, &[value]) $($await)* ?;
                 }
+
                 Ok(())
             }
 
@@ -810,6 +814,7 @@ macro_rules! define_driver {
                 if bank == Bank::Main {
                     return self.iface.read(start, buffer) $($await)*;
                 }
+
                 let main = self.select_bank(bank) $($await)* ?;
                 let result = self.iface.read(start, buffer) $($await)*;
                 let restore = self.iface.write(FUNC_CFG_ACCESS, &[main]) $($await)*;
@@ -823,6 +828,7 @@ macro_rules! define_driver {
                     self.scales.track(start, data);
                     return Ok(());
                 }
+
                 let main = self.select_bank(bank) $($await)* ?;
                 let result = self.iface.write(start, data) $($await)*;
                 let restore = self.iface.write(FUNC_CFG_ACCESS, &[main]) $($await)*;
@@ -888,16 +894,19 @@ macro_rules! define_driver {
                             self.iface.read(value_addr, &mut byte) $($await)* ?;
                             buffer[i] = byte[0];
                         }
+
                         $crate::driver::PageData::Write(bytes) => {
                             self.iface.write(value_addr, &[bytes[i]]) $($await)* ?;
                         }
                     }
+
                     offset = offset.wrapping_add(1);
                     if offset == 0 {
                         page += 1;
                         self.iface.write(sel_addr, &[$crate::driver::page_select(page)]) $($await)* ?;
                     }
                 }
+
                 self.iface.write(sel_addr, &[$crate::driver::page_select(0)]) $($await)* ?;
                 self.iface.write(rw_addr, &[rw.with_page_read(false).with_page_write(false).into()]) $($await)*
             }
