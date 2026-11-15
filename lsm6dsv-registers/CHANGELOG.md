@@ -5,6 +5,10 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-11-15
+
+[0.3.0]: https://github.com/sunsided/lsm6dsv/releases/tag/v0.3.0
+
 No changes; released together with `lsm6dsv` 0.3.0.
 
 ## [0.2.0] - 2026-11-15

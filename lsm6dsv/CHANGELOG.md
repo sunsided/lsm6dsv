@@ -5,6 +5,10 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-11-15
+
+[0.3.0]: https://github.com/sunsided/lsm6dsv/releases/tag/v0.3.0
+
 ### Changed
 
 - [**breaking**] `SelfTestError` is gone; the self-tests return `Error`, which has the same `Bus` and `Timeout` cases.
