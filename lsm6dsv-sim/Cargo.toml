@@ -1,0 +1,19 @@
+[package]
+name = "lsm6dsv-sim"
+description = "A behavioral model of the STMicroelectronics LSM6DSV/LSM6DSV16X IMU for tests and emulation"
+publish = false
+version.workspace = true
+authors.workspace = true
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+lsm6dsv-registers.workspace = true
+embedded-hal.workspace = true
+embedded-hal-async.workspace = true
+
+[dev-dependencies]
+embassy-futures.workspace = true
