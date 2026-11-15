@@ -107,6 +107,12 @@ fn page_registers_layout() {
 }
 
 #[test]
+fn ext_format_follows_the_datasheet() {
+    // DS13510 table 427: EXT_FORMAT_SEL is bit 2 (ST's C headers put it at bit 1).
+    assert_eq!(u8::from(ExtFormat::new().with_ext_format_sel(true)), 0b100);
+}
+
+#[test]
 fn raw_values_round_trip() {
     for value in 0..=u8::MAX {
         assert_eq!(u8::from(Ctrl3::from(value)), value);

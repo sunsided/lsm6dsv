@@ -39,6 +39,21 @@ def parse_header(path, prefix):
         i += 1
     return regs
 
+# Layouts where ST's C headers disagree with datasheet DS13510; the datasheet wins.
+LAYOUT_OVERRIDES = {
+    # Table 427: EXT_FORMAT_SEL is bit 2 (ST's lsm6dsv16x-rs agrees); the headers put it at bit 1.
+    "EXT_FORMAT": [["not_used0", 2], ["ext_format_sel", 1], ["not_used1", 5]],
+}
+
+
+def apply_overrides(regs):
+    for group in regs.values():
+        for r in group:
+            if r["name"] in LAYOUT_OVERRIDES:
+                r["fields"] = LAYOUT_OVERRIDES[r["name"]]
+    return regs
+
+
 def parse_datasheet(path):
     lines = open(path).read().split("\n")
     sections = [(2780, "main"), (6078, "if2"), (6562, "embedded"), (7814, "pg0_emb_adv"),
@@ -64,8 +79,8 @@ def parse_datasheet(path):
 if __name__ == "__main__":
     ref, ds, outp = sys.argv[1:4]
     model = {
-        "dsv": parse_header(ref + "/lsm6dsv-pid/lsm6dsv_reg.h", "LSM6DSV"),
-        "16x": parse_header(ref + "/lsm6dsv16x-pid/lsm6dsv16x_reg.h", "LSM6DSV16X"),
+        "dsv": apply_overrides(parse_header(ref + "/lsm6dsv-pid/lsm6dsv_reg.h", "LSM6DSV")),
+        "16x": apply_overrides(parse_header(ref + "/lsm6dsv16x-pid/lsm6dsv16x_reg.h", "LSM6DSV16X")),
         "ds16x": parse_datasheet(ds),
     }
     json.dump(model, open(outp, "w"), indent=1)

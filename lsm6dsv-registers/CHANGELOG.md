@@ -5,6 +5,10 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Fixed
+
+- `ExtFormat::ext_format_sel` is bit 2, as in DS13510 table 427 (it was bit 1, as in ST's C headers).
+
 ### Added
 
 - The full register map from datasheet DS13510: main, embedded functions and sensor hub banks,

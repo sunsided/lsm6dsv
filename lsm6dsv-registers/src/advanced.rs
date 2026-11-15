@@ -772,12 +772,12 @@ writable_advanced_register!(
 #[derive(PartialEq, Eq)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct ExtFormat {
-    #[bits(1)]
+    #[bits(2)]
     __not_used0: u8,
-    /// `EXT_FORMAT_SEL` (bit 1).
+    /// `EXT_FORMAT_SEL` (bit 2).
     #[bits(1)]
     pub ext_format_sel: bool,
-    #[bits(6)]
+    #[bits(5)]
     __not_used1: u8,
 }
 
