@@ -5,6 +5,11 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Added
+
+- `coordinate-frame` feature with the `SensorFrame<T>` alias (`EastNorthUp`) for the sensor axes, to convert
+  readings into other frames with `coordinate-frame` 0.5.
+
 ## [0.3.0] - 2026-11-15
 
 [0.3.0]: https://github.com/sunsided/lsm6dsv/releases/tag/v0.3.0

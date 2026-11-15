@@ -14,7 +14,9 @@ rust-version.workspace = true
 
 [features]
 async = ["dep:embedded-hal-async"]
-defmt = ["dep:defmt", "lsm6dsv-registers/defmt"]
+## Coordinate frame type alias `SensorFrame` for the sensor axes.
+coordinate-frame = ["dep:coordinate-frame"]
+defmt = ["dep:defmt", "lsm6dsv-registers/defmt", "coordinate-frame?/defmt"]
 ## Qvar and machine learning core support (LSM6DSV16X only).
 lsm6dsv16x = ["lsm6dsv-registers/lsm6dsv16x"]
 
@@ -23,6 +25,7 @@ workspace = true
 
 [dependencies]
 lsm6dsv-registers.workspace = true
+coordinate-frame = { workspace = true, optional = true }
 defmt = { workspace = true, optional = true }
 embedded-hal.workspace = true
 embedded-hal-async = { workspace = true, optional = true }
