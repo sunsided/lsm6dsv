@@ -1,6 +1,7 @@
 # LSM6DSV / LSM6DSV16X
 
 [![Rust](https://github.com/sunsided/lsm6dsv/actions/workflows/rust.yml/badge.svg)](https://github.com/sunsided/lsm6dsv/actions/workflows/rust.yml)
+[![codecov](https://codecov.io/gh/sunsided/lsm6dsv/graph/badge.svg)](https://codecov.io/gh/sunsided/lsm6dsv)
 
 `no_std` Rust support for the STMicroelectronics LSM6DSV and LSM6DSV16X 6-axis IMUs.
 
