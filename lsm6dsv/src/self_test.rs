@@ -94,22 +94,6 @@ pub(crate) fn accumulate(sum: &mut [i32; 3], raw: [i16; 3]) {
     }
 }
 
-/// An error of a self-test.
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
-#[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub enum SelfTestError<E> {
-    /// A bus error.
-    Bus(E),
-    /// No sample arrived in time.
-    Timeout,
-}
-
-impl<E> From<E> for SelfTestError<E> {
-    fn from(error: E) -> Self {
-        Self::Bus(error)
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -5,6 +5,17 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Changed
+
+- [**breaking**] `SelfTestError` is gone; the self-tests return `Error`, which has the same `Bus` and `Timeout` cases.
+- [**breaking**] `f32_to_f16` is gone. It had no caller and rounded exact ties up instead of to even.
+- `set_sensor_hub` panics for a slave count outside 1 to 4 instead of clamping it.
+
+### Fixed
+
+- After `write_configuration`, the driver reads the full scales from the device again. A `.ucf` sequence that
+  changed them made `read_acceleration` and `read_angular_rate` scale with the old values.
+
 ## [0.2.0] - 2026-11-15
 
 [0.2.0]: https://github.com/sunsided/lsm6dsv/releases/tag/v0.2.0
