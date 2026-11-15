@@ -114,10 +114,10 @@ jobs:
     needs:
       - build-linux
     runs-on: ubuntu-latest
+    # Jobs that use secrets run in an environment; the token never reaches the build steps.
+    environment: wokwi
     permissions:
       contents: read # Checkout only.
-    env:
-      WOKWI_CLI_TOKEN: ${{ secrets.WOKWI_CLI_TOKEN }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -133,8 +133,13 @@ jobs:
       - name: Build firmware
         working-directory: examples/esp32c3
         run: cargo build --release
+      - name: Check for Wokwi token
+        id: token
+        env:
+          WOKWI_CLI_TOKEN: ${{ secrets.WOKWI_CLI_TOKEN }}
+        run: echo "present=${WOKWI_CLI_TOKEN:+true}" >> "$GITHUB_OUTPUT"
       - name: Run scenario
-        if: env.WOKWI_CLI_TOKEN != ''
+        if: steps.token.outputs.present == 'true'
         uses: wokwi/wokwi-ci-action@09e807a07e05b6f2498e43e3fb7ffcf38c277af7 # v1.3.0
         with:
           token: ${{ secrets.WOKWI_CLI_TOKEN }}
