@@ -8,7 +8,6 @@
 //! Registers and fields that exist only on the LSM6DSV16X are behind the `lsm6dsv16x` feature.
 
 #![deny(missing_docs)]
-#![deny(warnings)]
 #![no_std]
 #![forbid(unsafe_code)]
 // Enables the `doc_cfg` feature when the `docsrs` configuration attribute is defined.
