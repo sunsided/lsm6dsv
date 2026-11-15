@@ -1,0 +1,13 @@
+{
+  "name": "lsm6dsv",
+  "author": "Markus Mayer",
+  "pins": ["VCC", "GND", "SDA", "SCL", "INT1"],
+  "controls": [
+    { "id": "accelX", "label": "Acceleration X (mg)", "type": "range", "min": -16000, "max": 16000, "step": 1 },
+    { "id": "accelY", "label": "Acceleration Y (mg)", "type": "range", "min": -16000, "max": 16000, "step": 1 },
+    { "id": "accelZ", "label": "Acceleration Z (mg)", "type": "range", "min": -16000, "max": 16000, "step": 1 },
+    { "id": "gyroX", "label": "Angular rate X (dps)", "type": "range", "min": -4000, "max": 4000, "step": 1 },
+    { "id": "gyroY", "label": "Angular rate Y (dps)", "type": "range", "min": -4000, "max": 4000, "step": 1 },
+    { "id": "gyroZ", "label": "Angular rate Z (dps)", "type": "range", "min": -4000, "max": 4000, "step": 1 }
+  ]
+}

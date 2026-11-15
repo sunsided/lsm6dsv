@@ -1,0 +1,8 @@
+[wokwi]
+version = 1
+elf = "target/riscv32imc-unknown-none-elf/release/lsm6dsv-example-esp32c3"
+firmware = "target/riscv32imc-unknown-none-elf/release/lsm6dsv-example-esp32c3"
+
+[[chip]]
+name = "lsm6dsv"
+binary = "../../sim/wokwi-chip/lsm6dsv.chip.wasm"

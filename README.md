@@ -7,6 +7,8 @@
 - [`lsm6dsv`](lsm6dsv): the driver, blocking and async, over I²C and SPI.
 - [`lsm6dsv-registers`](lsm6dsv-registers): a typed register map, addressable over I²C and SPI.
 - [`lsm6dsv-sim`](lsm6dsv-sim): a behavioral model of the device for host tests (not published).
+- [`sim/wokwi-chip`](sim/wokwi-chip): the model as a Wokwi custom chip, and
+  [`examples/esp32c3`](examples/esp32c3): ESP32-C3 firmware with a Wokwi scenario that CI runs.
 
 Enable the `lsm6dsv16x` feature for registers and fields that exist only on the LSM6DSV16X.
 
