@@ -7,7 +7,7 @@ STMicroelectronics LSM6DSV and LSM6DSV16X 6-axis IMUs, over I²C or SPI.
 - Output data rates, operating modes, full scales, gyroscope LPF1 and accelerometer LPF2/high-pass filters
 - Accelerometer and gyroscope self-test with the datasheet limits
 - FIFO configuration, status and tagged-word decoding (accelerometer, gyroscope, temperature,
-  timestamp, step counter, SFLP quaternion/gravity/bias, sensor hub)
+  timestamp, step counter, SFLP quaternion/gravity/bias, sensor hub), including compressed words
 - Interrupt routing, wake-up, free-fall, tap, 6D/4D orientation and activity/inactivity
 - Embedded functions: pedometer, tilt, significant motion, SFLP game rotation vector,
   FSM/MLC programs from `.ucf` sequences

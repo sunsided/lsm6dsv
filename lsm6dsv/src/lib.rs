@@ -49,7 +49,8 @@
 //! ## FIFO
 //!
 //! [`Lsm6dsv::read_fifo`] reads tagged words; [`FifoWord::decode`] turns them into
-//! [`FifoSample`]s. Compressed words are passed through undecoded.
+//! [`FifoSample`]s. With FIFO compression enabled, decode with a [`FifoDecoder`], which keeps
+//! the previous samples to restore compressed ones.
 //!
 //! [`embedded-hal`]: https://crates.io/crates/embedded-hal
 //! [`embedded-hal-async`]: https://crates.io/crates/embedded-hal-async
@@ -78,7 +79,7 @@ pub use data::{
     STANDARD_GRAVITY, Temperature, Timestamp, f16_to_f32, f32_to_f16,
 };
 pub use driver::{Error, RESET_POLLS};
-pub use fifo::{FifoSample, FifoStatus, FifoWord};
+pub use fifo::{DecodedSamples, FifoDecoder, FifoSample, FifoStatus, FifoWord};
 pub use filter::AccelFilter;
 #[cfg(feature = "async")]
 pub use interface::AsyncInterface;
