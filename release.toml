@@ -1,0 +1,10 @@
+# cargo-release configuration: `cargo release <level>` from the workspace root.
+#
+# Both publishable crates share one version and are released together with a single
+# `vX.Y.Z` tag; pushing the tag creates the GitHub Release (.github/workflows/release.yml).
+allow-branch = ["main"]
+shared-version = true
+consolidate-commits = true
+pre-release-commit-message = "Release {{version}}"
+tag-name = "v{{version}}"
+tag-message = "Release {{version}}"
