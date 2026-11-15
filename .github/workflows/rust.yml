@@ -13,21 +13,59 @@ on:
 env:
   CARGO_TERM_COLOR: always
 
+# A newer push to the same branch or pull request supersedes a running check.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# Every job only reads the repository.
+permissions: {}
+
 jobs:
   codespell:
     name: Check for spelling mistakes
     runs-on: ubuntu-latest
+    permissions:
+      contents: read # Checkout only.
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - name: Codespell
-        uses: codespell-project/actions-codespell@v2
+        uses: codespell-project/actions-codespell@e3258cca84ce02b0bb36a3d41f2c18f719a0cc1a # v2.4.3
+
+  workflows:
+    name: Lint workflows
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read # Checkout only.
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: actionlint
+        run: |
+          version=1.7.12
+          archive="actionlint_${version}_linux_amd64.tar.gz"
+          curl -sSfLO "https://github.com/rhysd/actionlint/releases/download/v${version}/${archive}"
+          echo "8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8  ${archive}" | sha256sum -c -
+          tar xzf "${archive}" actionlint
+          ./actionlint -color
+      - name: zizmor
+        run: pipx run zizmor==1.31.1 --pedantic .github/workflows
+        env:
+          GH_TOKEN: ${{ github.token }}
 
   lint:
     name: Lint
     runs-on: ubuntu-latest
+    permissions:
+      contents: read # Checkout only.
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - name: Check format
         run: cargo fmt --all --check
       - name: Clippy
@@ -39,8 +77,12 @@ jobs:
       - codespell
       - lint
     runs-on: ubuntu-latest
+    permissions:
+      contents: read # Checkout only.
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - name: Build documentation
         run: cargo doc --workspace --all-features --no-deps
 
@@ -49,31 +91,39 @@ jobs:
     needs:
       - lint
     runs-on: ubuntu-latest
+    permissions:
+      contents: read # Checkout only.
     strategy:
       matrix:
-        features: [ [ ], [ "--all-features" ], [ "--no-default-features" ] ]
+        features: ["", "--all-features", "--no-default-features"]
+    env:
+      FEATURES: ${{ matrix.features }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - name: Build
-        run: cargo build --workspace --verbose ${{ join(matrix.features, ' ') }}
+        run: cargo build --workspace --verbose ${FEATURES:+"$FEATURES"}
       - name: Run doctests
-        run: cargo test --workspace --doc --verbose ${{ join(matrix.features, ' ') }}
+        run: cargo test --workspace --doc --verbose ${FEATURES:+"$FEATURES"}
       - name: Run regular tests
-        run: cargo test --workspace --tests --verbose ${{ join(matrix.features, ' ') }}
+        run: cargo test --workspace --tests --verbose ${FEATURES:+"$FEATURES"}
 
   wokwi:
     name: Wokwi simulation (ESP32-C3)
     needs:
       - build-linux
     runs-on: ubuntu-latest
+    permissions:
+      contents: read # Checkout only.
     env:
       WOKWI_CLI_TOKEN: ${{ secrets.WOKWI_CLI_TOKEN }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          targets: wasm32-unknown-unknown, riscv32imc-unknown-none-elf
-          components: clippy, rustfmt
+          persist-credentials: false
+      - name: Install targets
+        run: rustup target add wasm32-unknown-unknown riscv32imc-unknown-none-elf
       - name: Lint chip and firmware
         run: |
           (cd sim/wokwi-chip && cargo fmt --check && cargo clippy --release -- -D warnings)
@@ -85,7 +135,7 @@ jobs:
         run: cargo build --release
       - name: Run scenario
         if: env.WOKWI_CLI_TOKEN != ''
-        uses: wokwi/wokwi-ci-action@v1
+        uses: wokwi/wokwi-ci-action@09e807a07e05b6f2498e43e3fb7ffcf38c277af7 # v1.3.0
         with:
           token: ${{ secrets.WOKWI_CLI_TOKEN }}
           path: examples/esp32c3

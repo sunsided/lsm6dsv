@@ -1,24 +1,89 @@
 ---
 name: Release
 
+# Every `vX.Y.Z` tag (`cargo release X.Y.Z --execute --no-publish` creates and pushes one):
+#
+# 1. publishes lsm6dsv-registers, then lsm6dsv, to crates.io with trusted publishing (OIDC,
+#    no stored token), skipping crate versions that are already there, and
+# 2. creates the GitHub Release `X.Y.Z` with the version's CHANGELOG sections as notes.
+#
+# Trusted publishing must be set up once per crate on crates.io (crate settings, Trusted
+# Publishing): repository sunsided/lsm6dsv, workflow release.yml, environment crates.io.
+# The very first version of a crate has to be published by hand.
+
 on:
   push:
     tags:
       - 'v[0-9]+.[0-9]+.[0-9]+'
 
-permissions:
-  contents: write
+permissions: {}
+
+# Releases run one after another, never cancelled half-way.
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
 
 jobs:
-  release:
-    name: Create GitHub Release
+  publish:
+    name: Publish to crates.io
     runs-on: ubuntu-latest
+    environment: crates.io
+    permissions:
+      contents: read # Checkout only.
+      id-token: write # OIDC token for crates.io trusted publishing.
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Check the tag matches the crate versions
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          for crate in lsm6dsv-registers lsm6dsv; do
+            version=$(cargo metadata --no-deps --format-version 1 \
+              | jq -r --arg name "$crate" '.packages[] | select(.name == $name) | .version')
+            if [ "$tag" != "$version" ]; then
+              echo "::error::tag $GITHUB_REF_NAME does not match $crate $version"
+              exit 1
+            fi
+          done
+
+      - uses: rust-lang/crates-io-auth-action@3268eb413133e2960fa4ae0e963ca76380c54cd9 # v1.0.6
+        id: auth
+
+      # No build cache here on purpose: a release must not be built from a cache that a
+      # pull request could have written.
+      - name: Publish
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          for crate in lsm6dsv-registers lsm6dsv; do
+            status=$(curl -s -o /dev/null -w '%{http_code}' \
+              -A "lsm6dsv release workflow (github.com/sunsided/lsm6dsv)" \
+              "https://crates.io/api/v1/crates/$crate/$version")
+            if [ "$status" = "200" ]; then
+              echo "::notice::$crate $version is already on crates.io; not publishing"
+              continue
+            fi
+            # cargo publish waits until the crate is available, so lsm6dsv finds its dependency.
+            cargo publish -p "$crate"
+          done
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ steps.auth.outputs.token }}
+
+  github-release:
+    name: Create GitHub Release
+    needs: publish
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # `gh release create` writes to the repository.
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
       - name: Extract release notes
         run: |
           version="${GITHUB_REF_NAME#v}"
-          echo "VERSION=$version" >> "$GITHUB_ENV"
           for crate in lsm6dsv lsm6dsv-registers; do
             printf "## %s\n" "$crate"
             # Print the section of this version, without its heading.
@@ -30,7 +95,8 @@ jobs:
             echo
           done > release-notes.md
           cat release-notes.md
+
       - name: Create release
+        run: gh release create "$GITHUB_REF_NAME" --title "${GITHUB_REF_NAME#v}" --notes-file release-notes.md --verify-tag
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "$GITHUB_REF_NAME" --title "$VERSION" --notes-file release-notes.md --verify-tag

@@ -1,7 +1,13 @@
-# cargo-release configuration: `cargo release <level>` from the workspace root.
+# cargo-release configuration: run `cargo release` from the workspace root.
 #
 # Both publishable crates share one version and are released together with a single
-# `vX.Y.Z` tag; pushing the tag creates the GitHub Release (.github/workflows/release.yml).
+# `vX.Y.Z` tag. CI publishes them (crates.io trusted publishing) and creates the GitHub
+# Release when the tag is pushed (.github/workflows/release.yml), so release with:
+#
+#     cargo release X.Y.Z --execute --no-publish    # bump, stamp CHANGELOGs, commit, tag, push
+#
+# The very first version of each crate has to be published by hand (`cargo release X.Y.Z
+# --execute`), because trusted publishing can only be configured for an existing crate.
 allow-branch = ["main"]
 shared-version = true
 consolidate-commits = true
