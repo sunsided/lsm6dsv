@@ -115,7 +115,10 @@ fn ext_format_follows_the_datasheet() {
 #[test]
 fn pedometer_false_positive_rejection() {
     // DS13476 and DS13510: FP_REJECTION_EN is bit 2 of PEDO_CMD_REG on both devices.
-    assert_eq!(u8::from(PedoCmdReg::new().with_fp_rejection_en(true)), 0b100);
+    assert_eq!(
+        u8::from(PedoCmdReg::new().with_fp_rejection_en(true)),
+        0b100
+    );
 }
 
 #[cfg(not(feature = "lsm6dsv16x"))]
