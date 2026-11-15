@@ -92,25 +92,38 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - name: Authenticate with crates.io
-        id: auth
-        uses: rust-lang/crates-io-auth-action@3268eb413133e2960fa4ae0e963ca76380c54cd9 # v1.0.6
-      # No build cache here on purpose: a release must not be built from a cache that a
-      # pull request could have written.
-      - name: Publish
-        env:
-          CARGO_REGISTRY_TOKEN: ${{ steps.auth.outputs.token }}
+      - name: Find crate versions to publish
+        id: pending
         run: |
           version="${GITHUB_REF_NAME#v}"
+          pending=""
           for crate in lsm6dsv-registers lsm6dsv; do
             status=$(curl -s -o /dev/null -w '%{http_code}' \
               -A "lsm6dsv release workflow (github.com/sunsided/lsm6dsv)" \
               "https://crates.io/api/v1/crates/$crate/$version")
             if [ "$status" = "200" ]; then
               echo "::notice::$crate $version is already on crates.io; not publishing"
-              continue
+            else
+              pending="$pending $crate"
             fi
-            # cargo publish waits until the crate is available, so lsm6dsv finds its dependency.
+          done
+          echo "crates=${pending# }" >> "$GITHUB_OUTPUT"
+      # Only authenticate when there is something to publish: a hand-published release
+      # (such as the first one) needs no trusted publisher.
+      - name: Authenticate with crates.io
+        if: steps.pending.outputs.crates != ''
+        id: auth
+        uses: rust-lang/crates-io-auth-action@3268eb413133e2960fa4ae0e963ca76380c54cd9 # v1.0.6
+      # No build cache here on purpose: a release must not be built from a cache that a
+      # pull request could have written.
+      - name: Publish
+        if: steps.pending.outputs.crates != ''
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ steps.auth.outputs.token }}
+          CRATES: ${{ steps.pending.outputs.crates }}
+        run: |
+          # cargo publish waits until a crate is available, so lsm6dsv finds its dependency.
+          for crate in $CRATES; do
             cargo publish -p "$crate"
           done
 
