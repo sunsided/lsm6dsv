@@ -3,6 +3,7 @@
 //! Main (user interface) bank registers.
 
 use crate::Bank;
+use crate::types::AccelBandwidth;
 use crate::types::AccelFullScale;
 use crate::types::AccelMode;
 use crate::types::DataRate;
@@ -10,6 +11,7 @@ use crate::types::FifoMode;
 use crate::types::FifoTag;
 use crate::types::GyroFullScale;
 use crate::types::GyroMode;
+use crate::types::SelfTestMode;
 use crate::types::TemperatureBatchRate;
 use crate::types::TimestampDecimation;
 use bitfield_struct::bitfield;
@@ -780,8 +782,10 @@ pub struct Ctrl8 {
     #[bits(1)]
     __not_used1: u8,
     /// `HP_LPF2_XL_BW` (bits 7:5).
+    ///
+    /// See [`AccelBandwidth`](crate::AccelBandwidth).
     #[bits(3)]
-    pub hp_lpf2_xl_bw: u8,
+    pub hp_lpf2_xl_bw: AccelBandwidth,
 }
 
 writable_register!(Ctrl8, RegisterAddress::CTRL8, Bank::Main);
@@ -827,11 +831,15 @@ writable_register!(Ctrl9, RegisterAddress::CTRL9, Bank::Main);
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct Ctrl10 {
     /// `ST_XL` (bits 1:0).
+    ///
+    /// See [`SelfTestMode`](crate::SelfTestMode).
     #[bits(2)]
-    pub st_xl: u8,
+    pub st_xl: SelfTestMode,
     /// `ST_G` (bits 3:2).
+    ///
+    /// See [`SelfTestMode`](crate::SelfTestMode).
     #[bits(2)]
-    pub st_g: u8,
+    pub st_g: SelfTestMode,
     #[bits(2)]
     __not_used0: u8,
     /// `EMB_FUNC_DEBUG` (bit 6).

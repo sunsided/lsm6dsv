@@ -68,8 +68,10 @@ pub mod asynch;
 mod data;
 mod driver;
 mod fifo;
+mod filter;
 mod interface;
 pub mod ois;
+mod self_test;
 
 pub use data::{
     Acceleration, AngularRate, QVAR_LSB_PER_MILLIVOLT, Quaternion, Qvar, SFLP_GRAVITY_MG_PER_LSB,
@@ -77,6 +79,7 @@ pub use data::{
 };
 pub use driver::{Error, RESET_POLLS};
 pub use fifo::{FifoSample, FifoStatus, FifoWord};
+pub use filter::AccelFilter;
 #[cfg(feature = "async")]
 pub use interface::AsyncInterface;
 pub use interface::{I2cInterface, Interface, SpiInterface};
@@ -85,6 +88,11 @@ pub use lsm6dsv_registers::{
     ALTERNATIVE_DEVICE_ADDRESS, AccelFullScale, AccelMode, Bank, DEFAULT_DEVICE_ADDRESS, DataRate,
     FifoMode, FifoTag, GyroFullScale, GyroMode, LSM6DSV_WHO_AM_I, SflpDataRate,
     TemperatureBatchRate, TimestampDecimation,
+};
+pub use lsm6dsv_registers::{AccelBandwidth, SelfTestMode};
+pub use self_test::{
+    ACCEL_SELF_TEST_MAX_MG, ACCEL_SELF_TEST_MIN_MG, GYRO_SELF_TEST_MAX_DPS, GYRO_SELF_TEST_MIN_DPS,
+    SELF_TEST_SAMPLES, SelfTest, SelfTestError,
 };
 
 pub use blocking::Lsm6dsv;
