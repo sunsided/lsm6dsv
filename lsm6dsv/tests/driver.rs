@@ -271,3 +271,60 @@ fn async_driver() {
     });
     assert_eq!(m.borrow().page_register(1, 0x83), 0x08);
 }
+
+#[test]
+fn self_test_passes_and_restores_configuration() {
+    let m = model();
+    let mut imu = Lsm6dsv::new(FakeI2c::new(&m));
+    imu.set_accel_mode(DataRate::Hz960, AccelMode::Normal)
+        .unwrap();
+    imu.set_gyro_full_scale(GyroFullScale::Dps250).unwrap();
+    m.borrow_mut().set_accel([10, 20, 8000]);
+    m.borrow_mut().set_gyro([1, 2, 3]);
+
+    let mut delay = FakeDelay::new(&m);
+    let accel = imu.self_test_accel(&mut delay).unwrap();
+    assert!(accel.passed(), "{accel:?}");
+    let gyro = imu.self_test_gyro(&mut delay).unwrap();
+    assert!(gyro.passed(), "{gyro:?}");
+
+    // CTRL1 (960 Hz normal mode), CTRL6 (±250 dps) and CTRL10 are back.
+    assert_eq!(m.borrow().main_register(0x10), 0x79);
+    assert_eq!(imu.gyro_full_scale().unwrap(), GyroFullScale::Dps250);
+    assert_eq!(m.borrow().main_register(0x19), 0);
+    assert_eq!(imu.read_acceleration().unwrap().raw, [10, 20, 8000]);
+}
+
+#[test]
+fn self_test_times_out_without_samples() {
+    let m = model();
+    let mut imu = Lsm6dsv::new(FakeI2c::new(&m));
+    // A delay that does not advance the model: no samples arrive.
+    struct NoDelay;
+    impl embedded_hal::delay::DelayNs for NoDelay {
+        fn delay_ns(&mut self, _: u32) {}
+    }
+    assert_eq!(
+        imu.self_test_accel(&mut NoDelay),
+        Err(SelfTestError::Timeout)
+    );
+}
+
+#[test]
+fn filters() {
+    let m = model();
+    let mut imu = Lsm6dsv::new(FakeI2c::new(&m));
+    imu.set_gyro_low_pass(Some(0b101)).unwrap();
+    assert_eq!(m.borrow().main_register(0x15) & 0x70, 0x50);
+    assert_eq!(m.borrow().main_register(0x16) & 0x01, 0x01);
+    imu.set_gyro_low_pass(None).unwrap();
+    assert_eq!(m.borrow().main_register(0x16) & 0x01, 0);
+
+    imu.set_accel_filter(AccelFilter::HighPass(AccelBandwidth::Div100))
+        .unwrap();
+    assert_eq!(m.borrow().main_register(0x17) >> 5, 0b100);
+    assert_eq!(m.borrow().main_register(0x18) & 0b11000, 0b10000);
+    imu.set_accel_filter(AccelFilter::LowPass(AccelBandwidth::Div10))
+        .unwrap();
+    assert_eq!(m.borrow().main_register(0x18) & 0b11000, 0b01000);
+}

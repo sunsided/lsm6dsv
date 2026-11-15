@@ -319,6 +319,42 @@ field_enum!(
     }
 );
 
+field_enum!(
+    /// Accelerometer LPF2 or high-pass filter cutoff (`HP_LPF2_XL_BW`), as a fraction of the ODR.
+    ///
+    /// With the high-pass path, [`AccelBandwidth::Div4`] selects the slope filter.
+    AccelBandwidth, 0b111, {
+        /// ODR/4 (slope filter on the high-pass path). The default.
+        Div4 = 0b000,
+        /// ODR/10.
+        Div10 = 0b001,
+        /// ODR/20.
+        Div20 = 0b010,
+        /// ODR/45.
+        Div45 = 0b011,
+        /// ODR/100.
+        Div100 = 0b100,
+        /// ODR/200.
+        Div200 = 0b101,
+        /// ODR/400.
+        Div400 = 0b110,
+        /// ODR/800.
+        Div800 = 0b111,
+    }
+);
+
+field_enum!(
+    /// Self-test mode of the accelerometer (`ST_XL`) or gyroscope (`ST_G`).
+    SelfTestMode, 0b11, {
+        /// Normal mode. The default.
+        Normal = 0b00,
+        /// Positive sign self-test.
+        Positive = 0b01,
+        /// Negative sign self-test.
+        Negative = 0b10,
+    }
+);
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -339,6 +375,8 @@ mod tests {
             assert_eq!(TimestampDecimation::from_bits(bits).into_bits(), bits & 0x3);
             assert_eq!(FifoTag::from_bits(bits).into_bits(), bits);
             assert_eq!(SflpDataRate::from_bits(bits).into_bits(), bits & 0x7);
+            assert_eq!(AccelBandwidth::from_bits(bits).into_bits(), bits & 0x7);
+            assert_eq!(SelfTestMode::from_bits(bits).into_bits(), bits & 0x3);
         }
     }
 

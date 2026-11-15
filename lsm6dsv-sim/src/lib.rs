@@ -17,6 +17,10 @@
 //! - a FIFO of tagged words filled via [`Lsm6dsvModel::push_fifo`], with `DIFF_FIFO`,
 //!   the watermark flag and popping on reads of `FIFO_DATA_OUT_TAG`,
 //! - the step counter and its reset (`EMB_FUNC_SRC.PEDO_RST_STEP`),
+//! - a new sample (data-ready flag) on every [`Lsm6dsvModel::tick_ns`] while the
+//!   accelerometer or gyroscope ODR is not power-down,
+//! - self-test, which adds [`MODEL_SELF_TEST_LSB`] to every axis (subtracts it for
+//!   negative self-test),
 //! - software reset (`CTRL3.SW_RESET`) and software power-on reset (`FUNC_CFG_ACCESS.SW_POR`).
 //!
 //! ## Not modelled
@@ -44,6 +48,11 @@ use lsm6dsv_registers::{
 
 /// The FIFO capacity of the model, in words (tag plus six data bytes).
 pub const FIFO_CAPACITY: usize = 512;
+
+/// The output change the model applies to every axis during self-test, in LSB.
+///
+/// 4096 LSB are 500 mg at ±4 g and 287 dps at ±2000 dps, within the datasheet limits.
+pub const MODEL_SELF_TEST_LSB: i16 = 4096;
 
 /// The SPI read bit.
 const SPI_READ: u8 = 0x80;
@@ -85,6 +94,8 @@ pub struct Lsm6dsvModel {
     /// Microseconds not yet counted by the timestamp.
     timestamp_remainder_ns: u64,
     steps: u16,
+    accel: [i16; 3],
+    gyro: [i16; 3],
 }
 
 impl Default for Lsm6dsvModel {
@@ -110,6 +121,8 @@ impl Lsm6dsvModel {
             spi: SpiState::Command,
             timestamp_remainder_ns: 0,
             steps: 0,
+            accel: [0; 3],
+            gyro: [0; 3],
         };
         model.power_on_reset();
         model
@@ -165,14 +178,33 @@ impl Lsm6dsvModel {
 
     /// Sets the raw accelerometer output and the `XLDA` flag.
     pub fn set_accel(&mut self, raw: [i16; 3]) {
-        self.set_words(Reg::OUTX_L_A as usize, &raw);
+        self.accel = raw;
+        self.refresh_outputs();
         self.main[Reg::STATUS_REG as usize] |= 0b001;
     }
 
     /// Sets the raw gyroscope output and the `GDA` flag.
     pub fn set_gyro(&mut self, raw: [i16; 3]) {
-        self.set_words(Reg::OUTX_L_G as usize, &raw);
+        self.gyro = raw;
+        self.refresh_outputs();
         self.main[Reg::STATUS_REG as usize] |= 0b010;
+    }
+
+    /// Writes the accelerometer and gyroscope outputs, including the self-test change.
+    fn refresh_outputs(&mut self) {
+        let ctrl10 = self.main[Reg::CTRL10 as usize];
+        let shift = |raw: [i16; 3], mode: u8| {
+            let change = match mode {
+                0b01 => MODEL_SELF_TEST_LSB,
+                0b10 => -MODEL_SELF_TEST_LSB,
+                _ => 0,
+            };
+            raw.map(|v| v.saturating_add(change))
+        };
+        let accel = shift(self.accel, ctrl10 & 0b11);
+        let gyro = shift(self.gyro, (ctrl10 >> 2) & 0b11);
+        self.set_words(Reg::OUTX_L_A as usize, &accel);
+        self.set_words(Reg::OUTX_L_G as usize, &gyro);
     }
 
     /// Sets the raw temperature output and the `TDA` flag.
@@ -241,6 +273,15 @@ impl Lsm6dsvModel {
 
     /// Advances the model's time.
     pub fn tick_ns(&mut self, ns: u64) {
+        // A new sample arrives while the ODR (bits 3:0 of CTRL1/CTRL2) is not power-down.
+        if self.main[Reg::CTRL1 as usize] & 0x0F != 0 {
+            self.main[Reg::STATUS_REG as usize] |= 0b001;
+        }
+
+        if self.main[Reg::CTRL2 as usize] & 0x0F != 0 {
+            self.main[Reg::STATUS_REG as usize] |= 0b010;
+        }
+
         // FUNCTIONS_ENABLE.TIMESTAMP_EN is bit 6.
         if self.main[Reg::FUNCTIONS_ENABLE as usize] & 0x40 == 0 {
             return;
@@ -422,6 +463,10 @@ impl Lsm6dsvModel {
         self.main[addr as usize] = value;
         if addr == Reg::FIFO_CTRL1 as u8 {
             self.update_fifo_status();
+        }
+
+        if addr == Reg::CTRL10 as u8 {
+            self.refresh_outputs();
         }
     }
 

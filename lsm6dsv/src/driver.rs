@@ -272,6 +272,135 @@ macro_rules! define_driver {
                 self.write_bank(Bank::Main, RegisterAddress::X_OFS_USR.addr(), &offset.map(|v| v as u8)) $($await)*
             }
 
+            // --- filters and self-test -------------------------------------------------------
+
+            /// Configures the gyroscope LPF1: `None` disables it, `Some(code)` enables it with
+            /// the `LPF1_G_BW` bandwidth code (0 to 7; the cutoff depends on the ODR, see the
+            /// datasheet's LPF1 table).
+            pub $($async)? fn set_gyro_low_pass(&mut self, bandwidth: Option<u8>) -> Result<(), IFACE::Error> {
+                if let Some(code) = bandwidth {
+                    self.modify_register(|r: Ctrl6| r.with_lpf1_g_bw(code)) $($await)* ?;
+                }
+
+                self.modify_register(|r: Ctrl7| r.with_lpf1_g_en(bandwidth.is_some())) $($await)*
+            }
+
+            /// Configures the accelerometer filter after LPF1.
+            pub $($async)? fn set_accel_filter(&mut self, filter: $crate::AccelFilter) -> Result<(), IFACE::Error> {
+                let (low_pass, high_pass, bandwidth) = filter.bits();
+                self.modify_register(|r: Ctrl8| r.with_hp_lpf2_xl_bw(bandwidth)) $($await)* ?;
+                self.modify_register(|r: Ctrl9| r.with_lpf2_xl_en(low_pass).with_hp_slope_xl_en(high_pass)) $($await)*
+            }
+
+            /// Sets the accelerometer and gyroscope self-test modes directly.
+            ///
+            /// See [`Self::self_test_accel`] and [`Self::self_test_gyro`] for the complete procedure.
+            pub $($async)? fn set_self_test(&mut self, accel: SelfTestMode, gyro: SelfTestMode) -> Result<(), IFACE::Error> {
+                self.modify_register(|r: Ctrl10| r.with_st_xl(accel).with_st_g(gyro)) $($await)*
+            }
+
+            /// Runs the accelerometer self-test and restores the configuration afterwards.
+            ///
+            /// Averages [`SELF_TEST_SAMPLES`](crate::SELF_TEST_SAMPLES) samples at 60 Hz and ±4 g
+            /// without and with positive self-test. Takes about 0.4 s. The device must not move.
+            pub $($async)? fn self_test_accel<D: $delay>(&mut self, delay: &mut D) -> Result<$crate::SelfTest, $crate::SelfTestError<IFACE::Error>> {
+                let ctrl1 = self.read_register::<Ctrl1>() $($await)* ?;
+                let ctrl8 = self.read_register::<Ctrl8>() $($await)* ?;
+                let ctrl10 = self.read_register::<Ctrl10>() $($await)* ?;
+                let result = self.run_self_test(true, delay) $($await)*;
+
+                // Restore, even if the test failed.
+                self.write_register(ctrl10) $($await)* ?;
+                self.write_register(ctrl8) $($await)* ?;
+                self.write_register(ctrl1) $($await)* ?;
+                result
+            }
+
+            /// Runs the gyroscope self-test and restores the configuration afterwards.
+            ///
+            /// Averages [`SELF_TEST_SAMPLES`](crate::SELF_TEST_SAMPLES) samples at 240 Hz and
+            /// ±2000 dps without and with positive self-test. Takes about 0.3 s. The device must
+            /// not move.
+            pub $($async)? fn self_test_gyro<D: $delay>(&mut self, delay: &mut D) -> Result<$crate::SelfTest, $crate::SelfTestError<IFACE::Error>> {
+                let ctrl2 = self.read_register::<Ctrl2>() $($await)* ?;
+                let ctrl6 = self.read_register::<Ctrl6>() $($await)* ?;
+                let ctrl10 = self.read_register::<Ctrl10>() $($await)* ?;
+                let result = self.run_self_test(false, delay) $($await)*;
+
+                // Restore, even if the test failed.
+                self.write_register(ctrl10) $($await)* ?;
+                self.write_register(ctrl6) $($await)* ?;
+                self.write_register(ctrl2) $($await)* ?;
+                result
+            }
+
+            $($async)? fn run_self_test<D: $delay>(&mut self, accel: bool, delay: &mut D) -> Result<$crate::SelfTest, $crate::SelfTestError<IFACE::Error>> {
+                use $crate::self_test::{ACCEL_SCALE, GYRO_SCALE, SETTLE_MS};
+
+                if accel {
+                    self.write_register(Ctrl8::new().with_fs_xl(ACCEL_SCALE)) $($await)* ?;
+                    self.write_register(Ctrl1::new().with_odr_xl(DataRate::Hz60)) $($await)* ?;
+                } else {
+                    self.write_register(Ctrl6::new().with_fs_g(GYRO_SCALE)) $($await)* ?;
+                    self.write_register(Ctrl2::new().with_odr_g(DataRate::Hz240)) $($await)* ?;
+                }
+
+                self.set_self_test_mode(accel, SelfTestMode::Normal) $($await)* ?;
+                delay.delay_ms(SETTLE_MS) $($await)*;
+                let without = self.self_test_sum(accel, delay) $($await)* ?;
+
+                self.set_self_test_mode(accel, SelfTestMode::Positive) $($await)* ?;
+                delay.delay_ms(SETTLE_MS) $($await)*;
+                let with = self.self_test_sum(accel, delay) $($await)* ?;
+
+                if accel {
+                    Ok($crate::SelfTest::accel(without, with))
+                } else {
+                    Ok($crate::SelfTest::gyro(without, with))
+                }
+            }
+
+            $($async)? fn set_self_test_mode(&mut self, accel: bool, mode: SelfTestMode) -> Result<(), IFACE::Error> {
+                if accel {
+                    self.modify_register(|r: Ctrl10| r.with_st_xl(mode)) $($await)*
+                } else {
+                    self.modify_register(|r: Ctrl10| r.with_st_g(mode)) $($await)*
+                }
+            }
+
+            /// Discards one sample, then sums up [`SELF_TEST_SAMPLES`](crate::SELF_TEST_SAMPLES) raw samples.
+            $($async)? fn self_test_sum<D: $delay>(&mut self, accel: bool, delay: &mut D) -> Result<[i32; 3], $crate::SelfTestError<IFACE::Error>> {
+                let mut sum = [0; 3];
+
+                for i in 0..=$crate::SELF_TEST_SAMPLES {
+                    self.wait_for_sample(accel, delay) $($await)* ?;
+                    let raw = if accel {
+                        self.read_acceleration() $($await)* ?.raw
+                    } else {
+                        self.read_angular_rate() $($await)* ?.raw
+                    };
+
+                    if i > 0 {
+                        $crate::self_test::accumulate(&mut sum, raw);
+                    }
+                }
+
+                Ok(sum)
+            }
+
+            $($async)? fn wait_for_sample<D: $delay>(&mut self, accel: bool, delay: &mut D) -> Result<(), $crate::SelfTestError<IFACE::Error>> {
+                for _ in 0..$crate::self_test::MAX_POLLS {
+                    let status = self.status() $($await)* ?;
+                    if (accel && status.xlda()) || (!accel && status.gda()) {
+                        return Ok(());
+                    }
+
+                    delay.delay_ms($crate::self_test::POLL_MS) $($await)*;
+                }
+
+                Err($crate::SelfTestError::Timeout)
+            }
+
             // --- output data -----------------------------------------------------------------
 
             /// Reads the status register (data-ready flags).

@@ -73,6 +73,9 @@ FIELD_TYPES = {
     ("FIFO_CTRL4", "dec_ts_batch"): "TimestampDecimation",
     ("FIFO_DATA_OUT_TAG", "tag_sensor"): "FifoTag",
     ("SFLP_ODR", "sflp_game_odr"): "SflpDataRate",
+    ("CTRL8", "hp_lpf2_xl_bw"): "AccelBandwidth",
+    ("CTRL10", "st_xl"): "SelfTestMode",
+    ("CTRL10", "st_g"): "SelfTestMode",
 }
 
 RUST_KEYWORDS = {"type", "mod", "move", "ref", "self", "loop", "match", "use", "fn", "in", "if", "else"}
