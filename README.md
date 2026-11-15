@@ -1,0 +1,15 @@
+# LSM6DSV / LSM6DSV16X
+
+`no_std` Rust support for the STMicroelectronics LSM6DSV and LSM6DSV16X 6-axis IMUs.
+
+- [`lsm6dsv-registers`](lsm6dsv-registers): a typed register map, addressable over I²C and SPI.
+
+Enable the `lsm6dsv16x` feature for registers and fields that exist only on the LSM6DSV16X.
+
+The register map is written from the ST datasheets. ST's [`lsm6dsv16x-rs`](https://github.com/STMicroelectronics/lsm6dsv16x-rs)
+crate and the [`lsm6dsv-pid`](https://github.com/STMicroelectronics/lsm6dsv-pid) C driver served only as a cross-check;
+no code was copied from either. If you want ST's own API, use `lsm6dsv16x-rs`.
+
+## License
+
+Licensed under any of the [EUPL-1.2](LICENSE-EUPL), [MIT](LICENSE-MIT) or [Apache-2.0](LICENSE-APACHE) licenses, at your option.

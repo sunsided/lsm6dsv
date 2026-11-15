@@ -1,0 +1,27 @@
+[package]
+name = "lsm6dsv-registers"
+description = "A typed map of the STMicroelectronics LSM6DSV and LSM6DSV16X IMU registers"
+categories = ["embedded", "hardware-support", "no-std"]
+keywords = ["embedded-hal", "lsm6dsv", "lsm6dsv16x", "imu", "registers"]
+readme = "README.md"
+version.workspace = true
+authors.workspace = true
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[features]
+defmt = ["dep:defmt"]
+## Registers and fields that exist only on the LSM6DSV16X (Qvar, machine learning core).
+lsm6dsv16x = []
+
+[dependencies]
+bitfield-struct.workspace = true
+defmt = { workspace = true, optional = true }
+hardware-registers.workspace = true
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
