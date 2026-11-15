@@ -98,6 +98,31 @@ pub use self_test::{
 
 pub use blocking::Lsm6dsv;
 
+/// A vector in the sensor's own coordinate frame.
+///
+/// The LSM6DSV and LSM6DSV16X datasheets draw the accelerometer and gyroscope axes on the
+/// same right-handed X/Y/Z set, with +Z pointing out of the top face of the package
+/// (DS13476 Rev 5, Figure 4 "Pin connections", page 8; DS13510 Rev 4, Figure 5, page 9).
+/// The sensor's X, Y and Z are therefore East, North and Up of [`EastNorthUp`](coordinate_frame::EastNorthUp).
+///
+/// Convert a reading with [`From<[T; 3]>`](From) and move it into your board frame with `.into()`:
+///
+/// ```
+/// # use core::cell::RefCell;
+/// # use lsm6dsv_sim::{FakeI2c, Lsm6dsvModel};
+/// use coordinate_frame::NorthEastDown;
+/// use lsm6dsv::{Lsm6dsv, SensorFrame};
+/// # let model = RefCell::new(Lsm6dsvModel::new());
+/// # let mut imu = Lsm6dsv::new(FakeI2c::new(&model));
+///
+/// let accel = SensorFrame::from(imu.read_acceleration()?.g());
+/// let board: NorthEastDown<f32> = accel.into();
+/// # Ok::<(), lsm6dsv::Error<embedded_hal::i2c::ErrorKind>>(())
+/// ```
+#[cfg(feature = "coordinate-frame")]
+#[cfg_attr(docsrs, doc(cfg(feature = "coordinate-frame")))]
+pub type SensorFrame<T> = coordinate_frame::EastNorthUp<T>;
+
 /// The blocking driver.
 mod blocking {
     crate::driver::define_driver!(crate::Interface, embedded_hal::delay::DelayNs, [], []);

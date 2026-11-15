@@ -41,6 +41,24 @@ fn reset_and_configure() {
     assert_eq!(m.borrow().main_register(0x11), 0x57);
 }
 
+#[cfg(feature = "coordinate-frame")]
+#[test]
+fn acceleration_in_sensor_frame() {
+    use coordinate_frame::NorthEastDown;
+
+    let m = model();
+    let mut imu = Lsm6dsv::new(FakeI2c::new(&m));
+    // ±2 g full scale: 0.061 mg/LSB, so X = 0.061 g, Y = -0.122 g, Z = 1 g.
+    m.borrow_mut().set_accel([1000, -2000, 16393]);
+
+    let accel = SensorFrame::from(imu.read_acceleration().unwrap().g());
+    let board: NorthEastDown<f32> = accel.into();
+    let close = |a: f32, b: f32| (a - b).abs() < 0.001;
+    assert!(close(board.north(), -0.122));
+    assert!(close(board.east(), 0.061));
+    assert!(close(board.down(), -1.0));
+}
+
 #[test]
 fn scaled_outputs() {
     let m = model();
