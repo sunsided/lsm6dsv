@@ -9,13 +9,17 @@ Sources:
   converted with `pdftotext -layout`. `parse.py` uses that file's table line numbers, so another revision needs new offsets.
 - Bit positions and widths come from ST's `lsm6dsv-pid` and `lsm6dsv16x-pid` C headers, used only as a source of
   register layout facts. Registers or bits that only the LSM6DSV16X header lists are emitted behind the `lsm6dsv16x` feature.
-- `parse.py` checks that every header register exists in the datasheet at the same address.
+- `parse.py` checks that every header register exists in the datasheet at the same address, and applies
+  `LAYOUT_OVERRIDES` where a header disagrees with the datasheet.
+- `check_bits.py` compares the reserved bits and field boundaries of every register against the datasheet bit
+  tables (228 tables). It exits non-zero on a difference; `KNOWN` lists datasheet naming typos.
 
 ```sh
 git clone --depth 1 https://github.com/STMicroelectronics/lsm6dsv-pid ref/lsm6dsv-pid
 git clone --depth 1 https://github.com/STMicroelectronics/lsm6dsv16x-pid ref/lsm6dsv16x-pid
 pdftotext -layout DS_lsm6dsv16x.pdf ds16x.txt
 python3 -I parse.py ref ds16x.txt model.json
+python3 -I check_bits.py model.json ds16x.txt
 python3 -I gen.py model.json ds16x.txt ../../lsm6dsv-registers/src
 cargo fmt --all
 ```
