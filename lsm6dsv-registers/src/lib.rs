@@ -23,7 +23,9 @@ pub mod prelude {
     pub use hardware_registers::i2c::*;
     pub use hardware_registers::register_address::RegisterAddress8;
     pub use hardware_registers::sizes::R1;
-    pub use hardware_registers::spi::{SPIRegister, SPIRegister8, WritableSPIRegister8};
+    pub use hardware_registers::spi::{
+        ReadableSPIRegister8, SPIRegister, SPIRegister8, WritableSPIRegister8,
+    };
     pub use hardware_registers::{FromBits, HardwareRegister, ToBits, WritableHardwareRegister};
 }
 
@@ -207,8 +209,13 @@ impl Bank {
 }
 
 /// A register on the primary interface, addressable over I²C and SPI.
+///
+/// Every register of the device can be read.
 pub trait Register:
-    prelude::I2CRegister8<prelude::DeviceAddress7> + prelude::SPIRegister8 + From<u8> + Into<u8>
+    prelude::ReadableI2CRegister8<prelude::DeviceAddress7>
+    + prelude::ReadableSPIRegister8
+    + From<u8>
+    + Into<u8>
 {
     /// The bank this register lives in.
     const BANK: Bank;
@@ -225,7 +232,7 @@ pub trait WritableRegister:
 /// A register of the auxiliary SPI2 (OIS) interface.
 ///
 /// These registers are not reachable from the primary interface.
-pub trait Spi2Register: prelude::SPIRegister8 + From<u8> + Into<u8> {
+pub trait Spi2Register: prelude::ReadableSPIRegister8 + From<u8> + Into<u8> {
     /// The register address.
     const ADDRESS: u8;
 }

@@ -5,6 +5,12 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Changed
+
+- [**breaking**] Depends on `hardware-registers` 0.4. `Register` and `Spi2Register` now require
+  the readable register traits (`ReadableI2CRegister8`, `ReadableSPIRegister8`), which 0.4 separates
+  from the plain register traits; the prelude exports `ReadableSPIRegister8`.
+
 ## [0.1.0] - 2026-11-15
 
 [0.1.0]: https://github.com/sunsided/lsm6dsv/releases/tag/v0.1.0
