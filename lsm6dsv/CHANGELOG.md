@@ -8,7 +8,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 ### Added
 
 - `coordinate-frame` feature with the `SensorFrame<T>` alias (`EastNorthUp`) for the sensor axes, to convert
-  readings into other frames with `coordinate-frame` 0.5.
+  readings into other frames with `coordinate-frame` 0.6.
 
 ## [0.3.0] - 2026-11-15
 
