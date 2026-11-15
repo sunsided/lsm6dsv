@@ -2,7 +2,8 @@
 //!
 //! A register-level model of the LSM6DSV IMU, used as a fake I²C bus ([`FakeI2c`]) or SPI
 //! device ([`FakeSpi`]) in host tests of the `lsm6dsv` driver, with a delay ([`FakeDelay`])
-//! that advances the model's time.
+//! that advances the model's time. The fakes come from [`fake_bus`], so the model can also
+//! share an I²C bus with other models.
 //!
 //! The model implements:
 //!
@@ -33,13 +34,9 @@
 #![forbid(unsafe_code)]
 #![deny(missing_docs)]
 
-mod fake_delay;
-mod fake_i2c;
-mod fake_spi;
+mod bus;
 
-pub use fake_delay::FakeDelay;
-pub use fake_i2c::FakeI2c;
-pub use fake_spi::FakeSpi;
+pub use bus::{FakeDelay, FakeI2c, FakeSpi};
 
 use lsm6dsv_registers::{
     DEFAULT_DEVICE_ADDRESS, EmbeddedRegisterAddress as Emb, LSM6DSV_WHO_AM_I,
@@ -557,8 +554,9 @@ impl Lsm6dsvModel {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use embedded_hal::i2c::I2c;
-    use embedded_hal::spi::{Operation, SpiDevice};
+    use fake_bus::embedded_hal::delay::DelayNs;
+    use fake_bus::embedded_hal::i2c::I2c;
+    use fake_bus::embedded_hal::spi::{Operation, SpiDevice};
 
     #[test]
     fn i2c_who_am_i() {
@@ -628,7 +626,7 @@ mod tests {
         let model = core::cell::RefCell::new(Lsm6dsvModel::new());
         let mut bus = FakeI2c::new(&model);
         let mut id = [0];
-        embassy_futures::block_on(embedded_hal_async::i2c::I2c::write_read(
+        embassy_futures::block_on(fake_bus::embedded_hal_async::i2c::I2c::write_read(
             &mut bus,
             0x6A,
             &[0x0F],
@@ -636,5 +634,24 @@ mod tests {
         ))
         .unwrap();
         assert_eq!(id, [0x70]);
+    }
+
+    #[test]
+    fn delay_advances_the_timestamp_without_losing_time() {
+        let model = core::cell::RefCell::new(Lsm6dsvModel::new());
+        let mut bus = FakeI2c::new(&model);
+        // FUNCTIONS_ENABLE.TIMESTAMP_EN
+        bus.write(0x6A, &[0x50, 0x40]).unwrap();
+        let mut delay = FakeDelay::new(&model);
+
+        // 10 LSB of 21.75 µs in steps of 999 ns plus a remainder: no time may get lost.
+        for _ in 0..217 {
+            delay.delay_ns(999);
+        }
+        delay.delay_ns(21_750 * 10 - 217 * 999);
+
+        let mut timestamp = [0; 4];
+        bus.write_read(0x6A, &[0x40], &mut timestamp).unwrap();
+        assert_eq!(u32::from_le_bytes(timestamp), 10);
     }
 }

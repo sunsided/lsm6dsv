@@ -15,8 +15,7 @@ workspace = true
 
 [dependencies]
 lsm6dsv-registers.workspace = true
-embedded-hal.workspace = true
-embedded-hal-async.workspace = true
+fake-bus.workspace = true
 
 [dev-dependencies]
 embassy-futures.workspace = true
