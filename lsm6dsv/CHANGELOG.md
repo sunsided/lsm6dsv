@@ -5,6 +5,10 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-11-15
+
+[0.1.0]: https://github.com/sunsided/lsm6dsv/releases/tag/v0.1.0
+
 ### Added
 
 - Blocking driver on `embedded-hal` 1.0 and an equivalent async driver (`async` feature), over I²C and SPI.
