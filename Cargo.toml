@@ -4,7 +4,7 @@ members = ["lsm6dsv-registers", "lsm6dsv", "lsm6dsv-sim"]
 exclude = ["sim/wokwi-chip", "examples"]
 
 [workspace.package]
-version = "0.3.1"
+version = "0.3.2"
 authors = ["Markus Mayer <widemeadows@gmail.com>"]
 license = "EUPL-1.2 OR MIT OR Apache-2.0"
 homepage = "https://github.com/sunsided/lsm6dsv"
@@ -25,5 +25,5 @@ embedded-hal = "1.0.0"
 embedded-hal-async = "1.0.0"
 fake-bus = "0.1.0"
 hardware-registers = "0.4.1"
-lsm6dsv-registers = { path = "lsm6dsv-registers", version = "0.3.1" }
+lsm6dsv-registers = { path = "lsm6dsv-registers", version = "0.3.2" }
 lsm6dsv-sim = { path = "lsm6dsv-sim" }

@@ -5,6 +5,10 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+## [0.3.2] - 2026-11-15
+
+[0.3.2]: https://github.com/sunsided/lsm6dsv/releases/tag/v0.3.2
+
 ### Changed
 
 - Dropped `#![deny(warnings)]`, so a warning added by a newer compiler can no longer
