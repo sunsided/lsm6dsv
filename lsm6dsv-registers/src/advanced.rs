@@ -633,8 +633,6 @@ pub struct FsmStartAddH {
 
 writable_advanced_register!(FsmStartAddH, AdvancedRegisterAddress::FSM_START_ADD_H);
 
-#[cfg(feature = "lsm6dsv16x")]
-#[cfg_attr(docsrs, doc(cfg(feature = "lsm6dsv16x")))]
 /// [`PEDO_CMD_REG`](AdvancedRegisterAddress::PEDO_CMD_REG) (page 1, 83h), R/W
 ///
 /// Pedometer configuration register (R/W).
@@ -654,28 +652,6 @@ pub struct PedoCmdReg {
     __not_used1: u8,
 }
 
-#[cfg(feature = "lsm6dsv16x")]
-#[cfg_attr(docsrs, doc(cfg(feature = "lsm6dsv16x")))]
-writable_advanced_register!(PedoCmdReg, AdvancedRegisterAddress::PEDO_CMD_REG);
-
-#[cfg(not(feature = "lsm6dsv16x"))]
-/// [`PEDO_CMD_REG`](AdvancedRegisterAddress::PEDO_CMD_REG) (page 1, 83h), R/W
-///
-/// Pedometer configuration register (R/W).
-#[bitfield(u8)]
-#[derive(PartialEq, Eq)]
-#[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub struct PedoCmdReg {
-    #[bits(3)]
-    __not_used0: u8,
-    /// `CARRY_COUNT_EN` (bit 3).
-    #[bits(1)]
-    pub carry_count_en: bool,
-    #[bits(4)]
-    __not_used1: u8,
-}
-
-#[cfg(not(feature = "lsm6dsv16x"))]
 writable_advanced_register!(PedoCmdReg, AdvancedRegisterAddress::PEDO_CMD_REG);
 
 /// [`PEDO_DEB_STEPS_CONF`](AdvancedRegisterAddress::PEDO_DEB_STEPS_CONF) (page 1, 84h), R/W

@@ -12,7 +12,7 @@
 
 Enable the `lsm6dsv16x` feature for registers and fields that exist only on the LSM6DSV16X.
 
-The register map follows datasheet DS13510 (LSM6DSV16X); see [`tools/register-gen`](tools/register-gen) for how it is generated. ST's [`lsm6dsv16x-rs`](https://github.com/STMicroelectronics/lsm6dsv16x-rs)
+The register map follows datasheets DS13510 (LSM6DSV16X) and DS13476 (LSM6DSV); see [`tools/register-gen`](tools/register-gen) for how it is generated. ST's [`lsm6dsv16x-rs`](https://github.com/STMicroelectronics/lsm6dsv16x-rs)
 crate and the [`lsm6dsv-pid`](https://github.com/STMicroelectronics/lsm6dsv-pid) C driver served only as a cross-check;
 no code was copied from either. If you want ST's own API, use `lsm6dsv16x-rs`.
 

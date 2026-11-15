@@ -1,6 +1,7 @@
 """Compare the generated bit layouts against the per-register bit tables of DS13510.
 
-Usage: python3 -I check_bits.py model.json ds16x.txt
+Usage: python3 -I check_bits.py model.json ds16x.txt [16x]
+       python3 -I check_bits.py model.json dsv.txt dsv
 
 Compares reserved bits and field boundaries for every register table the datasheet has,
 independent of field names. Exits non-zero on an unexpected difference.
@@ -68,7 +69,8 @@ KNOWN = {
 }
 
 regs = {}
-for chip in ("16x",):
+chip = sys.argv[3] if len(sys.argv) > 3 else "16x"
+for chip in (chip,):
     for g, rs in model[chip].items():
         for r in rs:
             regs.setdefault(r["name"], []).append((g, r["fields"]))
