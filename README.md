@@ -23,6 +23,9 @@ The behavioral model in `lsm6dsv-sim` is used both as a fake bus in host tests a
 [Wokwi](https://wokwi.com) custom chip (`sim/wokwi-chip`). Example firmware in
 `examples/esp32c3` runs against the emulated chip using `wokwi-cli`.
 
+**[Try it in the browser](https://wokwi.com/projects/480780581314522113)**: an ESP32-C3 talking to the emulated LSM6DSV on
+wokwi.com. Click the chip and use its acceleration and angular-rate sliders.
+
 ### Use the chip in your own Wokwi project
 
 Every [GitHub Release](https://github.com/sunsided/lsm6dsv/releases) carries the chip as
@@ -35,6 +38,9 @@ latest release version written without the tag's `v` (`@v0.3.1` fails to load):
 
 This works on [wokwi.com](https://wokwi.com), in the Wokwi VS Code extension and with
 `wokwi-cli`; nothing needs to be built.
+
+For a browser demo, [`examples/arduino-esp32c3`](examples/arduino-esp32c3/README.md) has an
+Arduino sketch and `diagram.json` to paste into a new wokwi.com project.
 
 ### Run the example locally
 
