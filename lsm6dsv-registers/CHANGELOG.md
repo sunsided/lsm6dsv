@@ -7,6 +7,8 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Fixed
 
+- LSM6DSV: `EmbFuncEnB::pedo_adv_en` (bit 4) and `PedoCmdReg::fp_rejection_en` (bit 2), as in DS13476;
+  ST's LSM6DSV C header leaves both out. `fp_rejection_en` is now available on both devices.
 - `ExtFormat::ext_format_sel` is bit 2, as in DS13510 table 427 (it was bit 1, as in ST's C headers).
 
 ### Added

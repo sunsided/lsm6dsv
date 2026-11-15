@@ -39,51 +39,111 @@ def parse_header(path, prefix):
         i += 1
     return regs
 
-# Layouts where ST's C headers disagree with datasheet DS13510; the datasheet wins.
+# Layouts where ST's C headers disagree with the datasheets; the datasheets win.
 LAYOUT_OVERRIDES = {
-    # Table 427: EXT_FORMAT_SEL is bit 2 (ST's lsm6dsv16x-rs agrees); the headers put it at bit 1.
-    "EXT_FORMAT": [["not_used0", 2], ["ext_format_sel", 1], ["not_used1", 5]],
+    "16x": {
+        # DS13510 table 427: EXT_FORMAT_SEL is bit 2 (ST's lsm6dsv16x-rs agrees); the header has bit 1.
+        "EXT_FORMAT": [["not_used0", 2], ["ext_format_sel", 1], ["not_used1", 5]],
+    },
+    "dsv": {
+        # DS13476 table 397, as for the LSM6DSV16X.
+        "EXT_FORMAT": [["not_used0", 2], ["ext_format_sel", 1], ["not_used1", 5]],
+        # DS13476: PEDO_ADV_EN is bit 4 (MLC_EN on the LSM6DSV16X); the header leaves it out.
+        "EMB_FUNC_EN_B": [["fsm_en", 1], ["not_used0", 2], ["fifo_compr_en", 1], ["pedo_adv_en", 1], ["not_used1", 3]],
+        # DS13476: FP_REJECTION_EN is bit 2, as on the LSM6DSV16X; the header leaves it out.
+        "PEDO_CMD_REG": [["not_used0", 2], ["fp_rejection_en", 1], ["carry_count_en", 1], ["not_used1", 4]],
+    },
 }
 
 
-def apply_overrides(regs):
+def apply_overrides(chip, regs):
     for group in regs.values():
         for r in group:
-            if r["name"] in LAYOUT_OVERRIDES:
-                r["fields"] = LAYOUT_OVERRIDES[r["name"]]
+            if r["name"] in LAYOUT_OVERRIDES[chip]:
+                r["fields"] = LAYOUT_OVERRIDES[chip][r["name"]]
     return regs
 
 
+TABLE_TITLES = {
+    "main": r"Table \d+\. Registers address map\s*$",
+    "if2": r"Table \d+\. SPI2 register address map\s*$",
+    "embedded": r"Table \d+\. Register address map - embedded functions\s*$",
+    "pg0_emb_adv": r"Table \d+\. Register address map - embedded advanced features page 0\s*$",
+    "pg1_emb_adv": r"Table \d+\. Register address map - embedded advanced features page 1\s*$",
+    "pg2_emb_adv": r"Table \d+\. Register address map - embedded advanced features page 2\s*$",
+    "sensor_hub": r"Table \d+\. Register address map - sensor hub registers\s*$",
+}
+
+# A table ends at the next address map or at the first register section heading.
+TABLE_END = re.compile(r"Table \d+\. .*address map|^\s*\d+(\.\d+)*\s{3,}\S.*(\([0-9A-F]{2,3}h\)|register description)")
+
+
 def parse_datasheet(path):
+    """Returns {group: {NAME: {"access", "addr"}}} from the address map tables."""
     lines = open(path).read().split("\n")
-    sections = [(2780, "main"), (6078, "if2"), (6562, "embedded"), (7814, "pg0_emb_adv"),
-                (7862, "pg1_emb_adv"), (7885, "pg2_emb_adv"), (8778, "sensor_hub")]
-    ends = {"main": 2990, "if2": 6128, "embedded": 6646, "pg0_emb_adv": 7862, "pg1_emb_adv": 7885,
-            "pg2_emb_adv": 7951, "sensor_hub": 8864}
     out = {}
-    for start, g in sections:
-        out[g] = {}
-        prev = None
-        for k in range(start, ends[g]):
-            l = lines[k]
-            m = re.match(r"\s*([A-Z][A-Z0-9_a-z]*)\s+(R/W|RW|R|W|-)\s+([0-9A-F]{2,3})\b", l)
+
+    for group, title in TABLE_TITLES.items():
+        start = next(i for i, l in enumerate(lines) if re.search(title, l))
+        out[group] = {}
+
+        for line in lines[start + 1:]:
+            if TABLE_END.search(line):
+                break
+
+            m = re.match(r"\s*([A-Z][A-Z0-9_a-z]*)\s+(R/W|RW|R|W|-)\s+([0-9A-F]{2,3})\b", line)
             if m and m.group(1) not in ("RESERVED", "Name"):
-                out[g][m.group(1)] = {"access": m.group(2), "addr": int(m.group(3), 16)}
-                prev = m.group(1)
+                out[group][m.group(1)] = {"access": m.group(2), "addr": int(m.group(3), 16)}
                 continue
-            m = re.match(r"\s*([A-Z][A-Z0-9_a-z]*)\s+([0-9A-F]{2})\s+[01 ]{8,9}", l)  # split type column
+
+            # Rows whose type column is split over several lines (UI_*_OIS).
+            m = re.match(r"\s*([A-Z][A-Z0-9_a-z]*)\s+([0-9A-F]{2})\s+[01 ]{8,9}", line)
             if m:
-                out[g][m.group(1)] = {"access": "R/W", "addr": int(m.group(2), 16)}
+                out[group][m.group(1)] = {"access": "R/W", "addr": int(m.group(2), 16)}
+
     return out
 
+
+# Header names that the datasheet spells differently, or wraps over two lines of the table.
+DATASHEET_NAMES = {
+    "INTERNAL_FREQ": "INTERNAL_FREQ_FINE",
+    "STATUS_MASTER_MAINPAGE": None,
+    "EMB_FUNC_STATUS_MAINPAGE": None,
+}
+
+
+def check_addresses(chip, header, datasheet):
+    """Prints header registers missing from the datasheet or at another address."""
+    for group, regs in header.items():
+        table = {k.upper(): v["addr"] for k, v in datasheet[group].items()}
+        for r in regs:
+            name = r["name"].upper()
+            if name in DATASHEET_NAMES:
+                if DATASHEET_NAMES[name] is None:
+                    continue
+                name = DATASHEET_NAMES[name]
+            if name not in table:
+                print(f"{chip} {group}: {r['name']} not in the datasheet address map")
+            elif table[name] != r["addr"]:
+                print(f"{chip} {group}: {r['name']} at {r['addr']:#x}, datasheet {table[name]:#x}")
+
+
 if __name__ == "__main__":
-    ref, ds, outp = sys.argv[1:4]
+    ref, ds16x, outp = sys.argv[1:4]
+    dsv = sys.argv[4] if len(sys.argv) > 4 else None
     model = {
-        "dsv": apply_overrides(parse_header(ref + "/lsm6dsv-pid/lsm6dsv_reg.h", "LSM6DSV")),
-        "16x": apply_overrides(parse_header(ref + "/lsm6dsv16x-pid/lsm6dsv16x_reg.h", "LSM6DSV16X")),
-        "ds16x": parse_datasheet(ds),
+        "dsv": apply_overrides("dsv", parse_header(ref + "/lsm6dsv-pid/lsm6dsv_reg.h", "LSM6DSV")),
+        "16x": apply_overrides("16x", parse_header(ref + "/lsm6dsv16x-pid/lsm6dsv16x_reg.h", "LSM6DSV16X")),
+        "ds16x": parse_datasheet(ds16x),
     }
+    if dsv:
+        model["dsdsv"] = parse_datasheet(dsv)
+
     json.dump(model, open(outp, "w"), indent=1)
     for chip in ("dsv", "16x"):
         print(chip, {g: len(v) for g, v in model[chip].items()})
-    print("ds", {g: len(v) for g, v in model["ds16x"].items()})
+    print("ds16x", {g: len(v) for g, v in model["ds16x"].items()})
+    check_addresses("16x", model["16x"], model["ds16x"])
+    if dsv:
+        print("dsdsv", {g: len(v) for g, v in model["dsdsv"].items()})
+        check_addresses("dsv", model["dsv"], model["dsdsv"])

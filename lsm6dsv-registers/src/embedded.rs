@@ -263,7 +263,10 @@ pub struct EmbFuncEnB {
     /// `FIFO_COMPR_EN` (bit 3).
     #[bits(1)]
     pub fifo_compr_en: bool,
-    #[bits(4)]
+    /// `PEDO_ADV_EN` (bit 4).
+    #[bits(1)]
+    pub pedo_adv_en: bool,
+    #[bits(3)]
     __not_used1: u8,
 }
 
