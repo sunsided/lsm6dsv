@@ -7,7 +7,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Changed
 
-- [**breaking**] Depends on `hardware-registers` 0.4. `Register` and `Spi2Register` now require
+- [**breaking**] Depends on `hardware-registers` 0.4 (at least 0.4.1). `Register` and `Spi2Register` now require
   the readable register traits (`ReadableI2CRegister8`, `ReadableSPIRegister8`), which 0.4 separates
   from the plain register traits; the prelude exports `ReadableSPIRegister8`.
 
