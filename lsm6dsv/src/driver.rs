@@ -488,7 +488,7 @@ macro_rules! define_driver {
 
             /// Enables FIFO compression (in the embedded functions and at run time).
             ///
-            /// The driver passes compressed words through as [`FifoSample::Other`](crate::FifoSample::Other).
+            /// Decode compressed words with a [`FifoDecoder`](crate::FifoDecoder).
             pub $($async)? fn set_fifo_compression(&mut self, enabled: bool) -> Result<(), IFACE::Error> {
                 self.modify_register(|r: EmbFuncEnB| r.with_fifo_compr_en(enabled)) $($await)* ?;
                 self.modify_register(|r: FifoCtrl2| r.with_fifo_compr_rt_en(enabled)) $($await)*

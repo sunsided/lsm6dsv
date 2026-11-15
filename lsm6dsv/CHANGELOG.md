@@ -14,3 +14,4 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - Qvar and machine learning core support (`lsm6dsv16x` feature).
 - Filter configuration (`set_gyro_low_pass`, `set_accel_filter`) and self-test (`self_test_accel`, `self_test_gyro`)
   against the DS13510 limits.
+- `FifoDecoder` restores 2x and 3x compressed accelerometer and gyroscope FIFO words.
