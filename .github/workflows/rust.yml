@@ -60,3 +60,34 @@ jobs:
         run: cargo test --workspace --doc --verbose ${{ join(matrix.features, ' ') }}
       - name: Run regular tests
         run: cargo test --workspace --tests --verbose ${{ join(matrix.features, ' ') }}
+
+  wokwi:
+    name: Wokwi simulation (ESP32-C3)
+    needs:
+      - build-linux
+    runs-on: ubuntu-latest
+    env:
+      WOKWI_CLI_TOKEN: ${{ secrets.WOKWI_CLI_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown, riscv32imc-unknown-none-elf
+          components: clippy, rustfmt
+      - name: Lint chip and firmware
+        run: |
+          (cd sim/wokwi-chip && cargo fmt --check && cargo clippy --release -- -D warnings)
+          (cd examples/esp32c3 && cargo fmt --check && cargo clippy --release -- -D warnings)
+      - name: Build chip
+        run: sim/wokwi-chip/build.sh
+      - name: Build firmware
+        working-directory: examples/esp32c3
+        run: cargo build --release
+      - name: Run scenario
+        if: env.WOKWI_CLI_TOKEN != ''
+        uses: wokwi/wokwi-ci-action@v1
+        with:
+          token: ${{ secrets.WOKWI_CLI_TOKEN }}
+          path: examples/esp32c3
+          timeout: 30000
+          scenario: scenarios/motion.yaml
