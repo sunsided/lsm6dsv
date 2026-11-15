@@ -5,6 +5,10 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Changed
+
+- Depends on `hardware-registers` 0.3.
+
 ### Fixed
 
 - LSM6DSV: `EmbFuncEnB::pedo_adv_en` (bit 4) and `PedoCmdReg::fp_rejection_en` (bit 2), as in DS13476;
