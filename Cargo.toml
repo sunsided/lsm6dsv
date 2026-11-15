@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-members = ["lsm6dsv-registers"]
+members = ["lsm6dsv-registers", "lsm6dsv", "lsm6dsv-sim"]
 exclude = ["sim/wokwi-chip", "examples"]
 
 [workspace.package]
@@ -15,5 +15,9 @@ rust-version = "1.85"
 [workspace.dependencies]
 bitfield-struct = "0.13.0"
 defmt = "1.0.1"
+embassy-futures = "0.1.2"
+embedded-hal = "1.0.0"
+embedded-hal-async = "1.0.0"
 hardware-registers = "0.2.0"
 lsm6dsv-registers = { path = "lsm6dsv-registers", version = "0.1.0" }
+lsm6dsv-sim = { path = "lsm6dsv-sim" }

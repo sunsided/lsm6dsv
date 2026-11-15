@@ -1,0 +1,33 @@
+[package]
+name = "lsm6dsv"
+description = "A platform-agnostic embedded-hal driver for the STMicroelectronics LSM6DSV and LSM6DSV16X IMUs"
+categories = ["embedded", "hardware-support", "no-std"]
+keywords = ["embedded-hal-driver", "lsm6dsv", "lsm6dsv16x", "imu", "accelerometer"]
+readme = "README.md"
+version.workspace = true
+authors.workspace = true
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[features]
+async = ["dep:embedded-hal-async"]
+defmt = ["dep:defmt", "lsm6dsv-registers/defmt"]
+## Qvar and machine learning core support (LSM6DSV16X only).
+lsm6dsv16x = ["lsm6dsv-registers/lsm6dsv16x"]
+
+[dependencies]
+lsm6dsv-registers.workspace = true
+defmt = { workspace = true, optional = true }
+embedded-hal.workspace = true
+embedded-hal-async = { workspace = true, optional = true }
+
+[dev-dependencies]
+lsm6dsv-sim.workspace = true
+embassy-futures.workspace = true
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]

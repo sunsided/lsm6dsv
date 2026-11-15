@@ -56,6 +56,7 @@ macro_rules! readable_register {
     ($type:ident, $addr:expr, $bank:expr) => {
         impl $crate::Register for $type {
             const BANK: $crate::Bank = $bank;
+            const ADDRESS: u8 = ($addr).addr();
         }
         impl $crate::prelude::HardwareRegister<$crate::prelude::R1> for $type {}
 
@@ -97,7 +98,9 @@ macro_rules! writable_register {
 
 macro_rules! readable_spi2_register {
     ($type:ident, $addr:expr) => {
-        impl $crate::Spi2Register for $type {}
+        impl $crate::Spi2Register for $type {
+            const ADDRESS: u8 = ($addr).addr();
+        }
         impl $crate::prelude::HardwareRegister<$crate::prelude::R1> for $type {}
 
         impl $crate::prelude::SPIRegister<$crate::prelude::RegisterAddress8, $crate::prelude::R1>
@@ -207,6 +210,8 @@ pub trait Register:
 {
     /// The bank this register lives in.
     const BANK: Bank;
+    /// The register address within its bank.
+    const ADDRESS: u8;
 }
 
 /// A writable register on the primary interface.
@@ -218,7 +223,10 @@ pub trait WritableRegister:
 /// A register of the auxiliary SPI2 (OIS) interface.
 ///
 /// These registers are not reachable from the primary interface.
-pub trait Spi2Register: prelude::SPIRegister8 + From<u8> + Into<u8> {}
+pub trait Spi2Register: prelude::SPIRegister8 + From<u8> + Into<u8> {
+    /// The register address.
+    const ADDRESS: u8;
+}
 
 /// A writable register of the auxiliary SPI2 (OIS) interface.
 pub trait WritableSpi2Register: prelude::WritableSPIRegister8 + Spi2Register {}
